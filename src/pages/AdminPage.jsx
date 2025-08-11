@@ -134,10 +134,32 @@ const AdminPage = () => {
         setSyncing(true);
         let successCount = 0;
         let failCount = 0;
+        let duplicateCount = 0;
+        const duplicateCases = [];
 
         try {
             for (const order of pendingOrders) {
                 try {
+                    // Check if case number already exists in database
+                    const { data: existingOrder, error: checkError } = await supabase
+                        .from('job_orders')
+                        .select('case_number')
+                        .eq('case_number', order.caseNumber)
+                        .single();
+
+                    if (checkError && checkError.code !== 'PGRST116') {
+                        // PGRST116 is "not found" error, which is what we want
+                        throw checkError;
+                    }
+
+                    if (existingOrder) {
+                        // Case number already exists, skip this order
+                        duplicateCount++;
+                        duplicateCases.push(order.caseNumber);
+                        console.log(`Skipping duplicate case number: ${order.caseNumber}`);
+                        continue;
+                    }
+
                     // Map the offline data to database format
                     const dbData = {
                         case_number: order.caseNumber,
@@ -173,14 +195,28 @@ const AdminPage = () => {
                 }
             }
 
-            // Show results
+            // Show detailed results
+            let message = '';
             if (successCount > 0) {
-                alert(`✅ Successfully synced ${successCount} job order(s) to central database!${failCount > 0 ? `\n⚠️ ${failCount} failed to sync.` : ''}`);
-                // Refresh the data to update the UI
-                loadJobOrders();
-            } else {
-                alert('❌ Failed to sync any job orders. Please check your database connection.');
+                message += `✅ Successfully synced ${successCount} new job order(s) to central database!`;
             }
+            if (duplicateCount > 0) {
+                message += `\n⚠️ Skipped ${duplicateCount} duplicate case(s): ${duplicateCases.join(', ')}`;
+            }
+            if (failCount > 0) {
+                message += `\n❌ ${failCount} failed to sync due to errors.`;
+            }
+            
+            if (successCount === 0 && duplicateCount === 0 && failCount > 0) {
+                message = '❌ Failed to sync any job orders. Please check your database connection.';
+            } else if (successCount === 0 && duplicateCount > 0) {
+                message = `ℹ️ All ${duplicateCount} job orders were already synced (duplicates detected).`;
+            }
+
+            alert(message);
+            
+            // Refresh the data to update the UI
+            loadJobOrders();
         } catch (error) {
             console.error('Sync error:', error);
             alert('❌ Sync failed. Please check your database connection and try again.');
