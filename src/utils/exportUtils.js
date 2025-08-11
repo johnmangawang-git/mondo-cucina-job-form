@@ -93,8 +93,8 @@ export const downloadAsCSV = (data, filename = 'job-orders') => {
             `"${item.status || ''}"`,
             `"${item.createdAt || ''}"`,
             `"${(item.signatureData || item.signature_url) ? 'Yes' : 'No'}"`,
-            `"${item.mediaFiles ? item.mediaFiles.length : 0}"`,
-            `"${item.mediaFiles ? item.mediaFiles.map(f => f.name).join('; ') : 'None'}"`
+            `"${item.mediaFiles ? item.mediaFiles.length : item.media_urls ? item.media_urls.length : 0}"`,
+            `"${item.mediaFiles ? item.mediaFiles.map(f => f.name).join('; ') : item.media_urls ? item.media_urls.map((url, i) => `File ${i + 1}`).join('; ') : 'None'}"`
         ].join(','))
     ];
 
@@ -396,12 +396,12 @@ const generateHTMLReport = (data) => {
                 <div class="field"><strong>Status:</strong> ${item.status || 'N/A'}</div>
                 <div class="field"><strong>Created:</strong> ${item.createdAt || 'N/A'}</div>
                 
-                ${(item.mediaFiles && item.mediaFiles.length > 0) ? `
+                ${((item.mediaFiles && item.mediaFiles.length > 0) || (item.media_urls && item.media_urls.length > 0)) ? `
                     <div class="section-divider">
                         <div class="media-section">
-                            <strong>📷 Uploaded Files (${item.mediaFiles.length}):</strong>
+                            <strong>📷 Uploaded Files (${item.mediaFiles ? item.mediaFiles.length : item.media_urls ? item.media_urls.length : 0}):</strong>
                             <div class="media-files">
-                                ${item.mediaFiles.map((file, fileIndex) => {
+                                ${(item.mediaFiles || (item.media_urls ? item.media_urls.map(url => ({ data: url, name: 'Uploaded File', type: 'image' })) : [])).map((file, fileIndex) => {
                                     // Check if file is an image - be more flexible with detection
                                     const isImage = (file.type && file.type.startsWith('image/')) || 
                                                    (file.name && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(file.name)) ||

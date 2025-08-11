@@ -154,6 +154,7 @@ const AdminPage = () => {
                         tested_after: order.testedAfter,
                         troubles_found: order.troublesFound,
                         other_notes: order.otherNotes,
+                        media_urls: order.mediaFiles ? order.mediaFiles.map(file => file.data) : [],
                         signature_url: order.signatureData,
                         terms_accepted: order.termsAccepted,
                         status: 'synced',

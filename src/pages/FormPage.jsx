@@ -90,6 +90,7 @@ const FormPage = () => {
                 tested_after: formData.testedAfter,
                 troubles_found: formData.troublesFound,
                 other_notes: formData.otherNotes,
+                media_urls: convertedMediaFiles.map(file => file.data), // Map mediaFiles to media_urls
                 signature_url: formData.signatureData, // Map signatureData to signature_url
                 terms_accepted: formData.termsAccepted,
                 status: isOnline ? 'synced' : 'pending',
