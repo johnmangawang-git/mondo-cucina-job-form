@@ -263,11 +263,24 @@
     border: 2px dashed #ddd;
     border-radius: 4px;
     background-color: #fafafa;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    min-height: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .signature-canvas {
     display: block;
     border-radius: 4px;
+    border: 1px solid #e1e5e9;
+    background-color: white;
+    cursor: crosshair;
+    touch-action: none;
+    width: 100% !important;
+    height: auto !important;
 }
 
 .signature-placeholder {
@@ -278,6 +291,7 @@
     color: #7f8c8d;
     font-size: 16px;
     pointer-events: none;
+    z-index: 1;
 }
 
 .signature-actions {
@@ -400,7 +414,17 @@
     
     .signature-canvas-container {
         width: 100%;
-        overflow-x: auto;
+        padding: 5px;
+        min-height: 200px;
+    }
+    
+    .signature-canvas {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .signature-placeholder {
+        font-size: 14px;
     }
     
     .offline-status {
