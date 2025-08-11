@@ -44,5 +44,42 @@ export const useOfflineStorage = () => {
         return db.getAllFromIndex(STORE_NAME, 'status', 'pending');
     };
 
-    return { saveJobOrder, getPendingJobOrders };
+    const removeSyncedJobOrder = async (caseNumber) => {
+        if (!db) return;
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.store;
+        
+        // Get all pending orders
+        const pendingOrders = await store.index('status').getAll('pending');
+        
+        // Find the order with matching case number
+        const orderToRemove = pendingOrders.find(order => order.caseNumber === caseNumber);
+        
+        if (orderToRemove) {
+            await store.delete(orderToRemove.id);
+        }
+        
+        await tx.done;
+        return orderToRemove;
+    };
+
+    const clearSyncedJobOrders = async (caseNumbers) => {
+        if (!db || !caseNumbers.length) return;
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.store;
+        
+        // Get all pending orders
+        const pendingOrders = await store.index('status').getAll('pending');
+        
+        // Remove orders with matching case numbers
+        for (const order of pendingOrders) {
+            if (caseNumbers.includes(order.caseNumber)) {
+                await store.delete(order.id);
+            }
+        }
+        
+        await tx.done;
+    };
+
+    return { saveJobOrder, getPendingJobOrders, removeSyncedJobOrder, clearSyncedJobOrders };
 };

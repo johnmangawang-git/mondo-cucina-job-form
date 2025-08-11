@@ -8,7 +8,7 @@ import { downloadAsCSV, downloadAsPDF } from '../utils/exportUtils';
 
 const AdminPage = () => {
     const navigate = useNavigate();
-    const { getPendingJobOrders } = useOfflineStorage();
+    const { getPendingJobOrders, clearSyncedJobOrders } = useOfflineStorage();
     const [jobOrders, setJobOrders] = useState([]);
     const [pendingOrders, setPendingOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -136,6 +136,7 @@ const AdminPage = () => {
         let failCount = 0;
         let duplicateCount = 0;
         const duplicateCases = [];
+        const syncedCases = [];
 
         try {
             for (const order of pendingOrders) {
@@ -153,9 +154,10 @@ const AdminPage = () => {
                     }
 
                     if (existingOrder) {
-                        // Case number already exists, skip this order
+                        // Case number already exists, mark as duplicate and add to removal list
                         duplicateCount++;
                         duplicateCases.push(order.caseNumber);
+                        syncedCases.push(order.caseNumber); // Remove from local storage even if duplicate
                         console.log(`Skipping duplicate case number: ${order.caseNumber}`);
                         continue;
                     }
@@ -189,10 +191,17 @@ const AdminPage = () => {
 
                     if (error) throw error;
                     successCount++;
+                    syncedCases.push(order.caseNumber);
                 } catch (error) {
                     console.error('Failed to sync order:', order.caseNumber, error);
                     failCount++;
                 }
+            }
+
+            // Remove successfully synced orders (including duplicates) from local storage
+            if (syncedCases.length > 0) {
+                await clearSyncedJobOrders(syncedCases);
+                console.log(`Removed ${syncedCases.length} synced orders from local storage:`, syncedCases);
             }
 
             // Show detailed results
@@ -201,7 +210,7 @@ const AdminPage = () => {
                 message += `✅ Successfully synced ${successCount} new job order(s) to central database!`;
             }
             if (duplicateCount > 0) {
-                message += `\n⚠️ Skipped ${duplicateCount} duplicate case(s): ${duplicateCases.join(', ')}`;
+                message += `\n⚠️ Removed ${duplicateCount} duplicate case(s) from pending: ${duplicateCases.join(', ')}`;
             }
             if (failCount > 0) {
                 message += `\n❌ ${failCount} failed to sync due to errors.`;
@@ -210,7 +219,7 @@ const AdminPage = () => {
             if (successCount === 0 && duplicateCount === 0 && failCount > 0) {
                 message = '❌ Failed to sync any job orders. Please check your database connection.';
             } else if (successCount === 0 && duplicateCount > 0) {
-                message = `ℹ️ All ${duplicateCount} job orders were already synced (duplicates detected).`;
+                message = `ℹ️ All ${duplicateCount} job orders were already synced. Removed duplicates from pending list.`;
             }
 
             alert(message);
