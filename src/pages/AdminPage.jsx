@@ -158,6 +158,7 @@ const AdminPage = () => {
     }, []);
 
     const handleExport = useCallback((format) => {
+        const selectedData = getSelectedData();
         if (selectedData.length === 0) {
             alert('Please select at least one job order to export.');
             return;
