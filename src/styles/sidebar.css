@@ -34,21 +34,47 @@
 .mobile-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 1rem;
     padding: 1rem;
     background: var(--white);
     border-bottom: 1px solid var(--gray-200);
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .mobile-menu-toggle {
     padding: 0.5rem;
     border-radius: 8px;
+    min-width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+    transform: scale(1.05);
 }
 
 .mobile-title {
     color: var(--primary);
     font-weight: 600;
+    flex: 1;
+}
+
+.mobile-status {
+    display: flex;
+    align-items: center;
+}
+
+.mobile-status small {
+    font-size: 0.75rem;
+    white-space: nowrap;
 }
 
 /* Desktop Toggle Button */
@@ -99,9 +125,17 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6);
     z-index: 1040;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+@media (max-width: 767.98px) {
+    .sidebar-overlay {
+        background-color: rgba(0, 0, 0, 0.4);
+    }
 }
 
 /* Main Sidebar */
@@ -127,15 +161,34 @@
     width: 80px;
 }
 
-/* Mobile: Hide sidebar by default */
+/* Mobile: Hide sidebar by default and improve UX */
 @media (max-width: 767.98px) {
     .sidebar {
         transform: translateX(-100%);
         width: 280px;
+        z-index: 1060; /* Higher z-index for mobile */
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
     }
     
     .sidebar:not(.collapsed) {
         transform: translateX(0);
+    }
+    
+    /* Improve mobile main content */
+    .main-content {
+        margin-left: 0 !important;
+        transition: filter 0.3s ease;
+    }
+    
+    /* Add blur effect when sidebar is open on mobile */
+    .main-content:not(.sidebar-collapsed) {
+        filter: blur(2px);
+        pointer-events: none;
+    }
+    
+    .main-content.sidebar-collapsed {
+        filter: none;
+        pointer-events: auto;
     }
 }
 
@@ -290,6 +343,23 @@
     gap: 1rem;
     text-align: left;
     min-height: 56px;
+    /* Better touch targets for mobile */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve mobile touch experience */
+@media (max-width: 767.98px) {
+    .nav-link {
+        min-height: 60px;
+        padding: 1rem;
+        font-size: 1rem;
+    }
+    
+    .nav-link:active {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(0.98);
+    }
 }
 
 .nav-link:hover {

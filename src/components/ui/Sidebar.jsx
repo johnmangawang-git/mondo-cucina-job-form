@@ -53,6 +53,10 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
 
     const handleNavigation = (path) => {
         navigate(path);
+        // Auto-close sidebar on mobile after navigation
+        if (window.innerWidth < 768) {
+            setTimeout(() => onToggle(), 150); // Small delay for smooth UX
+        }
     };
 
     return (
@@ -66,7 +70,10 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
             )}
             
             {/* Sidebar */}
-            <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+            <div 
+                className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Brand Header */}
                 <div className="sidebar-header">
                     <div className="brand-container">
