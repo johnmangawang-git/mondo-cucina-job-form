@@ -71,7 +71,6 @@ const FormPage = () => {
         const convertedMediaFiles = formData.mediaFiles;
         
         try {
-            
             // Map form data to database field names
             const jobOrderData = {
                 case_number: formData.caseNumber,
@@ -98,44 +97,59 @@ const FormPage = () => {
             console.log('Saving job order with signature:', formData.signatureData ? 'YES' : 'NO');
             console.log('Saving job order with media files:', convertedMediaFiles.length);
             
-            if (isOnline) {
-                const { error } = await supabase
-                    .from('job_orders')
-                    .insert([jobOrderData])
-                    .select();
-                
-                if (error) throw error;
-                alert('Job order submitted successfully!');
-                navigate('/admin');
-            } else {
-                await saveJobOrder({
-                    ...jobOrderData,
-                    // Keep original form field names for offline storage
-                    ...formData,
-                    signatureData: formData.signatureData,
-                    mediaFiles: convertedMediaFiles, // Store converted media files
-                    status: 'pending',
-                    createdAt: new Date().toISOString()
-                });
+            // Check if Supabase is configured before attempting network calls
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            
+            if (isOnline && supabaseUrl && supabaseKey && supabaseUrl !== 'your-supabase-url-here' && supabaseKey !== 'your-supabase-anon-key-here') {
+                try {
+                    // Add timeout to prevent hanging
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+                    
+                    const { error } = await supabase
+                        .from('job_orders')
+                        .insert([jobOrderData])
+                        .select()
+                        .abortSignal(controller.signal);
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (error) throw error;
+                    alert('Job order submitted successfully!');
+                    navigate('/admin');
+                    return;
+                } catch (dbError) {
+                    if (dbError.name === 'AbortError') {
+                        console.warn('Database request timed out - saving offline instead');
+                    } else {
+                        console.warn('Database error - saving offline instead:', dbError.message);
+                    }
+                    // Fall through to offline save
+                }
+            }
+            
+            // Save offline (either because we're offline, no config, or database failed)
+            await saveJobOrder({
+                ...jobOrderData,
+                // Keep original form field names for offline storage
+                ...formData,
+                signatureData: formData.signatureData,
+                mediaFiles: convertedMediaFiles, // Store converted media files
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
+            
+            if (!isOnline) {
                 alert('Job order saved offline. Use "Sync to Central DB" button in Admin panel to sync when database is ready.');
-                navigate('/admin');
+            } else {
+                alert('Database connection issue. Job order saved offline. Use "Sync to Central DB" button in Admin panel to sync.');
             }
+            navigate('/admin');
+            
         } catch (error) {
-            console.warn('Could not submit to server (this is normal if database is not set up):', error.message);
-            try {
-                await saveJobOrder({
-                    ...formData,
-                    signatureData: formData.signatureData,
-                    mediaFiles: convertedMediaFiles, // Store converted media files
-                    status: 'pending',
-                    createdAt: new Date().toISOString()
-                });
-                alert('Database connection failed. Job order saved offline. Use "Sync to Central DB" button in Admin panel to sync.');
-                navigate('/admin');
-            } catch (offlineError) {
-                console.error('Offline save failed:', offlineError);
-                alert('Failed to save job order. Please try again.');
-            }
+            console.error('Failed to save job order:', error);
+            alert('Failed to save job order. Please try again.');
         } finally {
             setIsSubmitting(false);
         }

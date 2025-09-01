@@ -21,23 +21,39 @@ const AdminPage = () => {
 
     const loadJobOrders = async () => {
         setLoading(true);
-        try {
-            // Only attempt Supabase connection if environment variables are configured
-            if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-                console.info('Supabase not configured - working in offline mode only');
-                setConnectionError(true);
+        
+        // Check if Supabase is configured before attempting any network calls
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        
+        if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-supabase-url-here' || supabaseKey === 'your-supabase-anon-key-here') {
+            console.info('Supabase not configured - working in offline mode only');
+            setConnectionError(true);
+            try {
                 const pending = await getPendingJobOrders();
                 setPendingOrders(pending || []);
-                setJobOrders([]);
-                setLoading(false);
-                return;
+            } catch (error) {
+                console.error('Error loading pending orders:', error);
+                setPendingOrders([]);
             }
+            setJobOrders([]);
+            setLoading(false);
+            return;
+        }
 
-            // Load from Supabase
+        try {
+            // Add timeout to prevent long loading times
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            // Load from Supabase with timeout
             const { data: supabaseOrders, error } = await supabase
                 .from('job_orders')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .abortSignal(controller.signal);
+            
+            clearTimeout(timeoutId);
 
             if (error) throw error;
             setJobOrders(supabaseOrders || []);
@@ -48,11 +64,21 @@ const AdminPage = () => {
             setPendingOrders(pending || []);
 
         } catch (error) {
-            console.warn('Could not load job orders from server (this is normal if database is not set up):', error.message);
+            if (error.name === 'AbortError') {
+                console.warn('Supabase request timed out - switching to offline mode');
+            } else {
+                console.warn('Could not load job orders from server (this is normal if database is not set up):', error.message);
+            }
             setConnectionError(true);
             // If online fetch fails, still show pending orders
-            const pending = await getPendingJobOrders();
-            setPendingOrders(pending || []);
+            try {
+                const pending = await getPendingJobOrders();
+                setPendingOrders(pending || []);
+            } catch (offlineError) {
+                console.error('Error loading pending orders:', offlineError);
+                setPendingOrders([]);
+            }
+            setJobOrders([]);
         } finally {
             setLoading(false);
         }
@@ -251,10 +277,13 @@ const AdminPage = () => {
 
     if (loading) {
         return (
-            <div className="admin-page">
-                <div className="loading-container">
-                    <div className="spinner"></div>
-                    <p>Loading job orders...</p>
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+                <div className="text-center">
+                    <div className="spinner-border text-primary mb-3" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <h5 className="text-muted">Loading Dashboard...</h5>
+                    <p className="text-muted mb-0">Setting up your workspace</p>
                 </div>
             </div>
         );
