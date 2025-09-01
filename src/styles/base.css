@@ -1,3 +1,49 @@
+/* Material Design + Bootstrap Hybrid Theme */
+:root {
+    --primary: #2c3e50;     /* Dark Blue-Gray */
+    --secondary: #3498db;    /* Bright Blue */
+    --success: #2ecc71;      /* Green */
+    --warning: #f39c12;      /* Orange */
+    --danger: #e74c3c;       /* Red */
+    --light-bg: #f8f9fa;     /* Light Gray */
+    --white: #ffffff;
+    --dark: #2c3e50;
+    --gray-100: #f8f9fa;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+    
+    /* Sidebar Variables */
+    --sidebar-width: 250px;
+    --sidebar-bg: var(--primary);
+    --sidebar-text: var(--white);
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    
+    /* Card Variables */
+    --card-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --card-shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
+    --card-border-radius: 8px;
+    
+    /* Bootstrap Override Variables */
+    --bs-primary: var(--secondary);
+    --bs-primary-rgb: 52, 152, 219;
+    --bs-secondary: var(--primary);
+    --bs-secondary-rgb: 44, 62, 80;
+    --bs-success: var(--success);
+    --bs-success-rgb: 46, 204, 113;
+    --bs-warning: var(--warning);
+    --bs-warning-rgb: 243, 156, 18;
+    --bs-danger: var(--danger);
+    --bs-danger-rgb: 231, 76, 60;
+    --bs-light: var(--light-bg);
+    --bs-light-rgb: 248, 249, 250;
+}
+
 /* Reset and Base Styles */
 * {
     box-sizing: border-box;
@@ -11,13 +57,38 @@ body {
         sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #f5f6fa;
-    color: #2c3e50;
+    background-color: var(--light-bg);
+    color: var(--dark);
     line-height: 1.6;
+    overflow-x: hidden;
 }
 
 .app {
     min-height: 100vh;
+    display: flex;
+}
+
+/* Dashboard Layout */
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    background-color: var(--light-bg);
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+.main-content.sidebar-collapsed {
+    margin-left: 0;
+}
+
+.content-wrapper {
+    padding: 2rem;
 }
 
 /* Typography */
@@ -25,31 +96,103 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0 0 1rem 0;
     font-weight: 600;
     line-height: 1.2;
+    color: var(--dark);
 }
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
 
 p {
     margin: 0 0 1rem 0;
+    color: var(--gray-700);
 }
 
 /* Links */
 a {
-    color: #3498db;
+    color: var(--secondary);
     text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 a:hover {
+    color: var(--primary);
     text-decoration: underline;
 }
 
 /* Focus styles for accessibility */
 *:focus {
-    outline: 2px solid #3498db;
+    outline: 2px solid var(--secondary);
     outline-offset: 2px;
+}
+
+/* Material Design inspired cards */
+.card {
+    background: var(--white);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--card-shadow);
+    border: none;
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.card-elevated {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Loading animations */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    gap: 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--gray-200);
+    border-top: 4px solid var(--secondary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .content-wrapper {
+        padding: 1rem;
+    }
+    
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.75rem; }
+    h3 { font-size: 1.5rem; }
 }
 
 /* Print styles */
 @media print {
     .no-print {
         display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0;
     }
 }

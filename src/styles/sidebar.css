@@ -1,0 +1,461 @@
+/* Sidebar Styles - Material Design + Bootstrap Hybrid */
+
+/* Dashboard Layout */
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Main Content Area */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    background-color: var(--light-bg);
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+    position: relative;
+}
+
+.main-content.sidebar-collapsed {
+    margin-left: 80px;
+}
+
+@media (max-width: 767.98px) {
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .main-content.sidebar-collapsed {
+        margin-left: 0;
+    }
+}
+
+/* Mobile Header */
+.mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.mobile-menu-toggle {
+    padding: 0.5rem;
+    border-radius: 8px;
+}
+
+.mobile-title {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Desktop Toggle Button */
+.desktop-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 100;
+}
+
+.sidebar-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+}
+
+/* Content Wrapper */
+.content-wrapper {
+    padding: 2rem;
+}
+
+@media (max-width: 767.98px) {
+    .content-wrapper {
+        padding: 1rem;
+    }
+    
+    .desktop-toggle {
+        display: none !important;
+    }
+}
+
+/* Sidebar Overlay for Mobile */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    transition: opacity 0.3s ease;
+}
+
+/* Main Sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, #34495e 100%);
+    color: var(--sidebar-text);
+    transform: translateX(0);
+    transition: all 0.3s ease;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sidebar.collapsed {
+    width: 80px;
+}
+
+/* Mobile: Hide sidebar by default */
+@media (max-width: 767.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+    }
+    
+    .sidebar:not(.collapsed) {
+        transform: translateX(0);
+    }
+}
+
+/* Sidebar Header */
+.sidebar-header {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 80px;
+}
+
+.brand-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--secondary);
+    border-radius: 8px;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.brand-text {
+    min-width: 0;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .brand-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+.brand-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--sidebar-text);
+    line-height: 1.2;
+}
+
+.brand-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    display: block;
+    line-height: 1;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: var(--sidebar-text);
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+    background: var(--sidebar-hover);
+}
+
+/* Connection Status */
+.connection-status {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.status-indicator.online {
+    color: var(--success);
+}
+
+.status-indicator.offline {
+    color: var(--warning);
+}
+
+.status-text {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .status-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+.pending-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .pending-indicator {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* Navigation */
+.sidebar-nav {
+    flex: 1;
+    padding: 1rem 0;
+}
+
+.nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-item {
+    margin-bottom: 0.25rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    position: relative;
+    gap: 1rem;
+    text-align: left;
+    min-height: 56px;
+}
+
+.nav-link:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text);
+    transform: translateX(4px);
+}
+
+.nav-link.active {
+    background: var(--secondary);
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--white);
+}
+
+.nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.nav-content {
+    flex: 1;
+    min-width: 0;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .nav-content {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+.nav-label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.95rem;
+    line-height: 1.2;
+}
+
+.nav-description {
+    display: block;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.nav-link .badge {
+    margin-left: auto;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .nav-link .badge {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: auto;
+}
+
+.footer-content {
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .footer-content {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 767.98px) {
+    .sidebar {
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .sidebar-header {
+        padding: 1rem;
+    }
+    
+    .brand-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+    
+    .brand-title {
+        font-size: 1rem;
+    }
+}
+
+/* Scrollbar Styling */
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Hover Effects for Collapsed State */
+.sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
+}
+
+.sidebar.collapsed .nav-link:hover {
+    transform: scale(1.1);
+}
+
+/* Tooltip for Collapsed State */
+.sidebar.collapsed .nav-link[title] {
+    position: relative;
+}
+
+.sidebar.collapsed .nav-link[title]::after {
+    content: attr(title);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--dark);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+    margin-left: 0.5rem;
+}
+
+.sidebar.collapsed .nav-link[title]:hover::after {
+    opacity: 1;
+}

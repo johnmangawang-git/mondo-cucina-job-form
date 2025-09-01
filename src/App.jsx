@@ -4,10 +4,12 @@ import FormPage from './pages/FormPage';
 import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
 import DebugPage from './pages/DebugPage';
+import DashboardLayout from './components/ui/DashboardLayout';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import './styles/base.css';
 import './styles/components.css';
 import './styles/utilities.css';
+import './styles/sidebar.css';
 
 export default function App() {
     return (
@@ -15,11 +17,26 @@ export default function App() {
             <div className="app">
                 <PWAInstallPrompt />
                 <Routes>
-                    <Route path="/" element={<Navigate to="/form" replace />} />
-                    <Route path="/form" element={<FormPage />} />
-                    <Route path="/admin" element={<AdminPage />} />
+                    {/* Login page without dashboard layout */}
                     <Route path="/login" element={<LoginPage />} />
-                    <Route path="/debug" element={<DebugPage />} />
+                    
+                    {/* All other routes use dashboard layout */}
+                    <Route path="/" element={<Navigate to="/admin" replace />} />
+                    <Route path="/admin" element={
+                        <DashboardLayout>
+                            <AdminPage />
+                        </DashboardLayout>
+                    } />
+                    <Route path="/form" element={
+                        <DashboardLayout>
+                            <FormPage />
+                        </DashboardLayout>
+                    } />
+                    <Route path="/debug" element={
+                        <DashboardLayout>
+                            <DebugPage />
+                        </DashboardLayout>
+                    } />
                 </Routes>
             </div>
         </Router>

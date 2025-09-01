@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../components/ui/Button';
-import PageHeader from '../components/ui/PageHeader';
 import { useOfflineStorage } from '../hooks/useOfflineStorage';
 import { supabase } from '../api/supabase';
 import { downloadAsCSV, downloadAsPDF } from '../utils/exportUtils';
@@ -24,6 +22,17 @@ const AdminPage = () => {
     const loadJobOrders = async () => {
         setLoading(true);
         try {
+            // Only attempt Supabase connection if environment variables are configured
+            if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+                console.info('Supabase not configured - working in offline mode only');
+                setConnectionError(true);
+                const pending = await getPendingJobOrders();
+                setPendingOrders(pending || []);
+                setJobOrders([]);
+                setLoading(false);
+                return;
+            }
+
             // Load from Supabase
             const { data: supabaseOrders, error } = await supabase
                 .from('job_orders')
@@ -128,6 +137,12 @@ const AdminPage = () => {
     const handleSyncToCentralDB = async () => {
         if (pendingOrders.length === 0) {
             alert('No pending orders to sync.');
+            return;
+        }
+
+        // Check if Supabase is configured
+        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+            alert('⚠️ Supabase database is not configured. Please set up environment variables to enable sync functionality.');
             return;
         }
 
@@ -246,110 +261,128 @@ const AdminPage = () => {
     }
 
     return (
-        <div className="admin-page">
-            <PageHeader
-                title="Job Orders Dashboard"
-                subtitle="Manage and view all job orders"
-                backPath="/form"
-                backLabel="← Back to Form"
-                rightContent={
-                    <div className="admin-actions">
-                        <Button
-                            variant="primary"
-                            onClick={() => navigate('/form')}
+        <div className="admin-dashboard">
+            {/* Page Header */}
+            <div className="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h1 className="display-6 fw-bold text-primary mb-2">Dashboard</h1>
+                    <p className="text-muted mb-0">Manage and view all job orders</p>
+                </div>
+                <div className="d-flex gap-2 flex-wrap">
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => navigate('/form')}
+                    >
+                        <i className="bi bi-plus-circle me-2"></i>
+                        New Job Order
+                    </button>
+                    <button
+                        className="btn btn-outline-secondary"
+                        onClick={loadJobOrders}
+                    >
+                        <i className="bi bi-arrow-clockwise me-2"></i>
+                        Refresh
+                    </button>
+                    <button
+                        className="btn btn-outline-info"
+                        onClick={() => navigate('/debug')}
+                    >
+                        <i className="bi bi-bug me-2"></i>
+                        Debug
+                    </button>
+                    {pendingOrders.length > 0 && (
+                        <button
+                            className="btn btn-success"
+                            onClick={handleSyncToCentralDB}
+                            disabled={syncing}
                         >
-                            New Job Order
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={loadJobOrders}
-                        >
-                            Refresh
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => navigate('/debug')}
-                        >
-                            Debug Data
-                        </Button>
-                        {pendingOrders.length > 0 && (
-                            <Button
-                                variant="success"
-                                onClick={handleSyncToCentralDB}
-                                disabled={syncing}
-                            >
-                                {syncing ? 'Syncing...' : `🔄 Sync to Central DB (${pendingOrders.length})`}
-                            </Button>
-                        )}
-                    </div>
-                }
-            />
+                            <i className={`bi ${syncing ? 'bi-arrow-repeat spin' : 'bi-cloud-upload'} me-2`}></i>
+                            {syncing ? 'Syncing...' : `Sync (${pendingOrders.length})`}
+                        </button>
+                    )}
+                </div>
+            </div>
 
             {connectionError && (
-                <div style={{
-                    padding: '15px',
-                    backgroundColor: '#fff3cd',
-                    border: '1px solid #ffeaa7',
-                    borderRadius: '8px',
-                    marginBottom: '20px',
-                    color: '#856404'
-                }}>
-                    <strong>ℹ️ Database Connection:</strong> Working in offline mode. 
-                    Job orders are saved locally and will sync when database is configured.
+                <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                    <i className="bi bi-info-circle-fill me-2"></i>
+                    <div>
+                        <strong>Database Connection:</strong> Working in offline mode. 
+                        Job orders are saved locally and will sync when database is configured.
+                    </div>
                 </div>
             )}
 
             {(pendingOrders.length > 0 || jobOrders.length > 0) && (
-                <div className="export-section">
-                    <h3>📥 Download Data</h3>
-                    
-                    <div className="selection-controls">
-                        <div className="select-all-section">
-                            <label className="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={selectAll}
-                                    onChange={handleSelectAll}
-                                />
-                                <strong>Select All ({getAllItems().length} items)</strong>
-                            </label>
-                            <span className="selection-count">
-                                {selectedItems.length} selected
-                            </span>
+                <div className="card mb-4">
+                    <div className="card-header bg-primary text-white">
+                        <h5 className="card-title mb-0">
+                            <i className="bi bi-download me-2"></i>
+                            Export Data
+                        </h5>
+                    </div>
+                    <div className="card-body">
+                        <div className="row align-items-center mb-3">
+                            <div className="col-md-6">
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="selectAllCheck"
+                                        checked={selectAll}
+                                        onChange={handleSelectAll}
+                                    />
+                                    <label className="form-check-label fw-bold" htmlFor="selectAllCheck">
+                                        Select All ({getAllItems().length} items)
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="col-md-6 text-md-end">
+                                <span className="badge bg-info fs-6">
+                                    {selectedItems.length} selected
+                                </span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div className="export-buttons">
-                        <Button
-                            variant="primary"
-                            size="medium"
-                            onClick={() => handleExport('excel')}
-                            disabled={selectedItems.length === 0}
-                        >
-                            📊 Download Excel Data ({selectedItems.length})
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            size="medium"
-                            onClick={() => handleExport('pdf')}
-                            disabled={selectedItems.length === 0}
-                        >
-                            📋 Print/PDF ({selectedItems.length})
-                        </Button>
-                    </div>
-                    
-                    <div style={{ marginTop: '10px' }}>
-                        <small style={{ color: '#7f8c8d' }}>
-                            💡 Select job orders above, then choose download option
-                        </small>
+                        
+                        <div className="d-flex gap-2 flex-wrap">
+                            <button
+                                className="btn btn-success"
+                                onClick={() => handleExport('excel')}
+                                disabled={selectedItems.length === 0}
+                            >
+                                <i className="bi bi-file-earmark-excel me-2"></i>
+                                Excel ({selectedItems.length})
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => handleExport('pdf')}
+                                disabled={selectedItems.length === 0}
+                            >
+                                <i className="bi bi-file-earmark-pdf me-2"></i>
+                                PDF ({selectedItems.length})
+                            </button>
+                        </div>
+                        
+                        <div className="mt-2">
+                            <small className="text-muted">
+                                <i className="bi bi-lightbulb me-1"></i>
+                                Select job orders above, then choose download option
+                            </small>
+                        </div>
                     </div>
                 </div>
             )}
 
             {pendingOrders.length > 0 && (
-                <div className="pending-section">
-                    <h2>Pending Sync ({pendingOrders.length})</h2>
-                    <div className="job-orders-grid">
+                <div className="mb-4">
+                    <div className="d-flex align-items-center mb-3">
+                        <h4 className="text-warning mb-0">
+                            <i className="bi bi-clock-history me-2"></i>
+                            Pending Sync
+                        </h4>
+                        <span className="badge bg-warning text-dark ms-2">{pendingOrders.length}</span>
+                    </div>
+                    <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
                         {pendingOrders.map((order, index) => {
                             const itemId = `pending-${index}`;
                             const isSelected = selectedItems.includes(itemId);

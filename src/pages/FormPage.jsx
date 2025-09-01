@@ -4,8 +4,6 @@ import FormSection from '../components/form/FormSection';
 import SignaturePad from '../components/form/SignaturePad';
 import MediaUpload from '../components/form/MediaUpload';
 import OfflineStatus from '../components/form/OfflineStatus';
-import Button from '../components/ui/Button';
-import PageHeader from '../components/ui/PageHeader';
 import { useOfflineStorage } from '../hooks/useOfflineStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { supabase } from '../api/supabase';
@@ -144,39 +142,45 @@ const FormPage = () => {
     };
 
     return (
-        <div className="form-page">
-            <PageHeader
-                title="Job Order Form"
-                subtitle="Fill out the form below to create a new job order"
-                backPath="/admin"
-                backLabel="← Back to Dashboard"
-                rightContent={<OfflineStatus />}
-            />
+        <div className="form-dashboard">
+            {/* Page Header */}
+            <div className="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h1 className="display-6 fw-bold text-primary mb-2">Job Order Form</h1>
+                    <p className="text-muted mb-0">Fill out the form below to create a new job order</p>
+                </div>
+                <OfflineStatus />
+            </div>
             
             <form onSubmit={handleSubmit} className="job-order-form">
                 <FormSection title="General Information">
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="caseNumber">Case Number *</label>
-                            <input
-                                type="text"
-                                id="caseNumber"
-                                value={formData.caseNumber}
-                                onChange={(e) => handleInputChange('caseNumber', e.target.value)}
-                                className={errors.caseNumber ? 'error' : ''}
-                                placeholder="Enter case number"
-                            />
-                            {errors.caseNumber && <span className="error-text">{errors.caseNumber}</span>}
+                    <div className="row">
+                        <div className="col-md-6">
+                            <div className="mb-3">
+                                <label htmlFor="caseNumber" className="form-label required">Case Number</label>
+                                <input
+                                    type="text"
+                                    id="caseNumber"
+                                    className={`form-control ${errors.caseNumber ? 'is-invalid' : ''}`}
+                                    value={formData.caseNumber}
+                                    onChange={(e) => handleInputChange('caseNumber', e.target.value)}
+                                    placeholder="Enter case number"
+                                />
+                                {errors.caseNumber && <div className="invalid-feedback">{errors.caseNumber}</div>}
+                            </div>
                         </div>
                         
-                        <div className="form-group">
-                            <label htmlFor="orderDate">Order Date *</label>
-                            <input
-                                type="date"
-                                id="orderDate"
-                                value={formData.orderDate}
-                                onChange={(e) => handleInputChange('orderDate', e.target.value)}
-                            />
+                        <div className="col-md-6">
+                            <div className="mb-3">
+                                <label htmlFor="orderDate" className="form-label required">Order Date</label>
+                                <input
+                                    type="date"
+                                    id="orderDate"
+                                    className="form-control"
+                                    value={formData.orderDate}
+                                    onChange={(e) => handleInputChange('orderDate', e.target.value)}
+                                />
+                            </div>
                         </div>
                     </div>
                 </FormSection>
@@ -384,15 +388,25 @@ const FormPage = () => {
                     </div>
                 </FormSection>
 
-                <div className="form-actions">
-                    <Button
+                <div className="d-flex justify-content-center mt-4 pt-4 border-top">
+                    <button
                         type="submit"
-                        variant="primary"
+                        className={`btn btn-primary btn-lg ${isSubmitting ? 'loading' : ''}`}
                         disabled={isSubmitting}
-                        className="submit-btn"
+                        style={{ minWidth: '200px' }}
                     >
-                        {isSubmitting ? 'Submitting...' : 'Submit Job Order'}
-                    </Button>
+                        {isSubmitting ? (
+                            <>
+                                <i className="bi bi-arrow-repeat spin me-2"></i>
+                                Submitting...
+                            </>
+                        ) : (
+                            <>
+                                <i className="bi bi-check-circle me-2"></i>
+                                Submit Job Order
+                            </>
+                        )}
+                    </button>
                 </div>
             </form>
         </div>
