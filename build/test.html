@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Loading Test - Mondo Cucina</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>CSS Loading Diagnostic</h1>
+        <p>This page tests CSS asset loading and helps diagnose connection issues.</p>
+        
+        <div id="status-container">
+            <div class="status loading">
+                🔄 Testing CSS loading capabilities...
+            </div>
+        </div>
+        
+        <div id="test-results"></div>
+        
+        <button onclick="runTests()">Run Tests Again</button>
+        <button onclick="testMainSite()">Test Main Site</button>
+        <button onclick="location.href='/'">Back to App</button>
+        
+        <h3>Test Details:</h3>
+        <ul id="test-details"></ul>
+    </div>
+
+    <script>
+        let testResults = [];
+        
+        function addTestResult(test, status, message) {
+            testResults.push({ test, status, message, timestamp: new Date() });
+            updateDisplay();
+        }
+        
+        function updateDisplay() {
+            const resultsDiv = document.getElementById('test-results');
+            const detailsList = document.getElementById('test-details');
+            
+            resultsDiv.innerHTML = '';
+            detailsList.innerHTML = '';
+            
+            testResults.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `status ${result.status}`;
+                div.innerHTML = `<strong>${result.test}:</strong> ${result.message}`;
+                resultsDiv.appendChild(div);
+                
+                const li = document.createElement('li');
+                li.innerHTML = `${result.timestamp.toLocaleTimeString()} - ${result.test}: ${result.message}`;
+                detailsList.appendChild(li);
+            });
+        }
+        
+        function testCSSLoad(url, name) {
+            return new Promise((resolve) => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = url;
+                
+                const timeout = setTimeout(() => {
+                    addTestResult(name, 'error', 'Timeout after 10 seconds');
+                    resolve(false);
+                }, 10000);
+                
+                link.onload = () => {
+                    clearTimeout(timeout);
+                    addTestResult(name, 'success', 'Loaded successfully');
+                    resolve(true);
+                };
+                
+                link.onerror = () => {
+                    clearTimeout(timeout);
+                    addTestResult(name, 'error', 'Failed to load (network error)');
+                    resolve(false);
+                };
+                
+                document.head.appendChild(link);
+            });
+        }
+        
+        async function runTests() {
+            testResults = [];
+            document.getElementById('status-container').innerHTML = '<div class="status loading">🔄 Running tests...</div>';
+            
+            // Test Bootstrap CDN
+            await testCSSLoad('https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css', 'Bootstrap CDN');
+            
+            // Test local assets
+            try {
+                const response = await fetch('/assets/', { method: 'HEAD' });
+                addTestResult('Assets Directory', response.ok ? 'success' : 'error', 
+                    response.ok ? 'Assets directory accessible' : `HTTP ${response.status}`);
+            } catch (error) {
+                addTestResult('Assets Directory', 'error', error.message);
+            }
+            
+            // Test main app
+            try {
+                const response = await fetch('/', { method: 'HEAD' });
+                addTestResult('Main App', response.ok ? 'success' : 'error', 
+                    response.ok ? 'Main app accessible' : `HTTP ${response.status}`);
+            } catch (error) {
+                addTestResult('Main App', 'error', error.message);
+            }
+            
+            document.getElementById('status-container').innerHTML = '<div class="status success">✅ Tests completed</div>';
+        }
+        
+        function testMainSite() {
+            window.open('/', '_blank');
+        }
+        
+        // Run tests automatically on load
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

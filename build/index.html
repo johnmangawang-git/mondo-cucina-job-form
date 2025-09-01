@@ -4,21 +4,104 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#2c3e50" />
+    
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-192.png">
+    
+    <!-- Bootstrap 5.3.0 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUa1Y8tAF9z5bnl8xOOfJ8CdTxb2c4wV6A0sJFpHWtNKBjnX5Y9cMJdJBx0a" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" integrity="sha384-iJdJrFBgd9uD7VT4t7IwjKhHtF8cK0xP9y8xCfD5h8gV7OKgOLdTy9aP4rP8rP8" crossorigin="anonymous">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="./manifest.json" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Mondo Cucina" />
-    <link rel="apple-touch-icon" href="/icons/MONDO CUCINA.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
 
     <title>Mondo Cucina Job Order Form</title>
-  <script type="module" crossorigin src="/assets/index-d4960b4c.js"></script>
-  <link rel="stylesheet" href="/assets/index-f9b361bc.css">
+    
+    <!-- Enhanced CSS Loading Error Handler -->
+    <script>
+        // Handle CSS loading errors with enhanced retry logic
+        let cssRetryCount = 0;
+        const MAX_CSS_RETRIES = 3;
+        
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'LINK' && e.target.rel === 'stylesheet' && cssRetryCount < MAX_CSS_RETRIES) {
+                cssRetryCount++;
+                console.warn(`CSS failed to load (attempt ${cssRetryCount}):`, e.target.href);
+                
+                // Remove the failed link
+                if (e.target.parentNode) {
+                    e.target.parentNode.removeChild(e.target);
+                }
+                
+                // Progressive retry delays: 500ms, 1s, 2s
+                const delay = 500 * cssRetryCount;
+                setTimeout(function() {
+                    var newLink = document.createElement('link');
+                    newLink.rel = 'stylesheet';
+                    newLink.href = e.target.href.split('?')[0] + '?retry=' + Date.now() + '&attempt=' + cssRetryCount;
+                    newLink.onerror = function() {
+                        console.error('CSS retry failed:', this.href);
+                    };
+                    newLink.onload = function() {
+                        console.log('CSS loaded successfully on retry:', this.href);
+                        cssRetryCount = 0; // Reset counter on success
+                    };
+                    document.head.appendChild(newLink);
+                }, delay);
+            } else if (e.target.tagName === 'LINK' && cssRetryCount >= MAX_CSS_RETRIES) {
+                console.error('CSS loading failed after maximum retries:', e.target.href);
+                // Show user-friendly message
+                setTimeout(function() {
+                    if (!document.querySelector('.css-load-error')) {
+                        var errorDiv = document.createElement('div');
+                        errorDiv.className = 'css-load-error';
+                        errorDiv.style.cssText = 'position:fixed;top:10px;right:10px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:10px;border-radius:4px;z-index:9999;max-width:300px;font-family:Arial,sans-serif;font-size:14px;';
+                        errorDiv.innerHTML = '⚠️ Some styles failed to load. The app may look different than expected.';
+                        document.body.appendChild(errorDiv);
+                        setTimeout(function() {
+                            if (errorDiv.parentNode) {
+                                errorDiv.parentNode.removeChild(errorDiv);
+                            }
+                        }, 10000);
+                    }
+                }, 100);
+            }
+        }, true);
+        
+        // Monitor document ready state for CSS loading issues
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if main CSS has loaded by testing for known Bootstrap classes
+            setTimeout(function() {
+                var testEl = document.createElement('div');
+                testEl.className = 'container d-none';
+                document.body.appendChild(testEl);
+                var hasBootstrap = window.getComputedStyle(testEl).display === 'none';
+                document.body.removeChild(testEl);
+                
+                if (!hasBootstrap) {
+                    console.warn('Bootstrap CSS may not have loaded properly');
+                }
+            }, 1000);
+        });
+    </script>
+  <script type="module" crossorigin src="./assets/main.726cc444.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/chunk.31004e46.js">
+  <link rel="modulepreload" crossorigin href="./assets/chunk.d5b957c3.js">
+  <link rel="modulepreload" crossorigin href="./assets/chunk.9b27d5d6.js">
+  <link rel="stylesheet" href="./assets/styles.508ae34f.css">
 </head>
 <body>
     <div id="root"></div>
     
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

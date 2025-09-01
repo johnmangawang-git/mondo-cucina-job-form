@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineStorage } from '../hooks/useOfflineStorage';
 import { supabase } from '../api/supabase';
@@ -9,86 +9,141 @@ const AdminPage = () => {
     const { getPendingJobOrders, clearSyncedJobOrders } = useOfflineStorage();
     const [jobOrders, setJobOrders] = useState([]);
     const [pendingOrders, setPendingOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start with false for immediate UI
+    const [dataLoading, setDataLoading] = useState(true); // Separate loading for data
     const [selectedItems, setSelectedItems] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
     const [connectionError, setConnectionError] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('Initializing...');
 
-    useEffect(() => {
-        loadJobOrders();
-    }, []);
-
-    const loadJobOrders = async () => {
-        setLoading(true);
-        
-        // Check if Supabase is configured before attempting any network calls
+    // Memoize environment check to avoid repeated validations
+    const isSupabaseConfigured = useMemo(() => {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        return supabaseUrl && supabaseKey && 
+               supabaseUrl !== 'your-supabase-url-here' && 
+               supabaseKey !== 'your-supabase-anon-key-here';
+    }, []);
+
+    useEffect(() => {
+        // Start loading data immediately but don't block UI
+        loadJobOrdersOptimized();
+    }, []);
+
+    const loadJobOrdersOptimized = useCallback(async () => {
+        setDataLoading(true);
+        setLoadingMessage('Loading offline data...');
         
-        if (!supabaseUrl || !supabaseKey || supabaseUrl === 'your-supabase-url-here' || supabaseKey === 'your-supabase-anon-key-here') {
-            console.info('Supabase not configured - working in offline mode only');
-            setConnectionError(true);
-            try {
-                const pending = await getPendingJobOrders();
-                setPendingOrders(pending || []);
-            } catch (error) {
-                console.error('Error loading pending orders:', error);
-                setPendingOrders([]);
-            }
-            setJobOrders([]);
-            setLoading(false);
-            return;
-        }
-
         try {
-            // Add timeout to prevent long loading times
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
-            // Load from Supabase with timeout
-            const { data: supabaseOrders, error } = await supabase
-                .from('job_orders')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .abortSignal(controller.signal);
-            
-            clearTimeout(timeoutId);
-
-            if (error) throw error;
-            setJobOrders(supabaseOrders || []);
-            setConnectionError(false);
-
-            // Load pending offline orders
+            // Step 1: Load offline data first (fastest)
             const pending = await getPendingJobOrders();
             setPendingOrders(pending || []);
+            setLoadingMessage('Offline data loaded');
 
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.warn('Supabase request timed out - switching to offline mode');
-            } else {
-                console.warn('Could not load job orders from server (this is normal if database is not set up):', error.message);
+            // Step 2: Check online data if configured
+            if (!isSupabaseConfigured) {
+                console.info('Supabase not configured - working in offline mode only');
+                setConnectionError(true);
+                setJobOrders([]);
+                setDataLoading(false);
+                return;
             }
-            setConnectionError(true);
-            // If online fetch fails, still show pending orders
+
+            setLoadingMessage('Connecting to database...');
+            
+            // Step 3: Try to load from Supabase with shorter timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                setLoadingMessage('Connection timeout - using offline mode');
+            }, 3000); // Reduced from 5s to 3s
+            
             try {
-                const pending = await getPendingJobOrders();
-                setPendingOrders(pending || []);
-            } catch (offlineError) {
-                console.error('Error loading pending orders:', offlineError);
-                setPendingOrders([]);
+                const { data: supabaseOrders, error } = await supabase
+                    .from('job_orders')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(50) // Limit initial load to 50 most recent
+                    .abortSignal(controller.signal);
+                
+                clearTimeout(timeoutId);
+
+                if (error) throw error;
+                setJobOrders(supabaseOrders || []);
+                setConnectionError(false);
+                setLoadingMessage('Database connected');
+
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.warn('Supabase request timed out - switching to offline mode');
+                    setLoadingMessage('Connection timeout - offline mode active');
+                } else {
+                    console.warn('Could not load job orders from server:', error.message);
+                    setLoadingMessage('Database unavailable - offline mode active');
+                }
+                setConnectionError(true);
+                setJobOrders([]);
             }
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setLoadingMessage('Error loading data');
+            setPendingOrders([]);
             setJobOrders([]);
         } finally {
-            setLoading(false);
+            setDataLoading(false);
         }
-    };
+    }, [getPendingJobOrders, isSupabaseConfigured]);
 
-    const formatDate = (dateString) => {
+    const loadJobOrders = useCallback(() => {
+        setLoading(true);
+        loadJobOrdersOptimized().finally(() => setLoading(false));
+    }, [loadJobOrdersOptimized]);
+
+    // Optimized memoized calculations
+    const getAllItems = useCallback(() => {
+        return [
+            ...pendingOrders.map(item => ({...item, type: 'pending'})), 
+            ...jobOrders.map(item => ({...item, type: 'synced'}))
+        ];
+    }, [pendingOrders, jobOrders]);
+
+    const allItems = useMemo(() => getAllItems(), [getAllItems]);
+
+    const handleSelectAll = useCallback(() => {
+        if (selectAll) {
+            setSelectedItems([]);
+            setSelectAll(false);
+        } else {
+            setSelectedItems(allItems.map((item, index) => `${item.type}-${index}`));
+            setSelectAll(true);
+        }
+    }, [selectAll, allItems]);
+
+    const handleItemSelect = useCallback((itemId) => {
+        setSelectedItems(prev => {
+            const newSelection = prev.includes(itemId) 
+                ? prev.filter(id => id !== itemId)
+                : [...prev, itemId];
+            
+            setSelectAll(newSelection.length === allItems.length);
+            return newSelection;
+        });
+    }, [allItems.length]);
+
+    const getSelectedData = useCallback(() => {
+        return selectedItems.map(itemId => {
+            const [type, index] = itemId.split('-');
+            return allItems.find((item, idx) => item.type === type && idx.toString() === index);
+        }).filter(Boolean);
+    }, [selectedItems, allItems]);
+
+    const formatDate = useCallback((dateString) => {
         return new Date(dateString).toLocaleDateString();
-    };
+    }, []);
 
-    const getStatusBadge = (status) => {
+    const getStatusBadge = useCallback((status) => {
         const statusClasses = {
             draft: 'bg-secondary',
             pending: 'bg-warning',
@@ -100,46 +155,9 @@ const AdminPage = () => {
                 {status}
             </span>
         );
-    };
+    }, []);
 
-    const getAllItems = () => {
-        return [...pendingOrders.map(item => ({...item, type: 'pending'})), 
-                ...jobOrders.map(item => ({...item, type: 'synced'}))];
-    };
-
-    const handleSelectAll = () => {
-        const allItems = getAllItems();
-        if (selectAll) {
-            setSelectedItems([]);
-            setSelectAll(false);
-        } else {
-            setSelectedItems(allItems.map((item, index) => `${item.type}-${index}`));
-            setSelectAll(true);
-        }
-    };
-
-    const handleItemSelect = (itemId) => {
-        setSelectedItems(prev => {
-            const newSelection = prev.includes(itemId) 
-                ? prev.filter(id => id !== itemId)
-                : [...prev, itemId];
-            
-            const allItems = getAllItems();
-            setSelectAll(newSelection.length === allItems.length);
-            return newSelection;
-        });
-    };
-
-    const getSelectedData = () => {
-        const allItems = getAllItems();
-        return selectedItems.map(itemId => {
-            const [type, index] = itemId.split('-');
-            return allItems.find((item, idx) => item.type === type && idx.toString() === index);
-        }).filter(Boolean);
-    };
-
-    const handleExport = (format) => {
-        const selectedData = getSelectedData();
+    const handleExport = useCallback((format) => {
         if (selectedData.length === 0) {
             alert('Please select at least one job order to export.');
             return;
@@ -158,16 +176,16 @@ const AdminPage = () => {
             default:
                 break;
         }
-    };
+    }, [getSelectedData]);
 
-    const handleSyncToCentralDB = async () => {
+    const handleSyncToCentralDB = useCallback(async () => {
         if (pendingOrders.length === 0) {
             alert('No pending orders to sync.');
             return;
         }
 
         // Check if Supabase is configured
-        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        if (!isSupabaseConfigured) {
             alert('⚠️ Supabase database is not configured. Please set up environment variables to enable sync functionality.');
             return;
         }
@@ -180,63 +198,69 @@ const AdminPage = () => {
         const syncedCases = [];
 
         try {
-            for (const order of pendingOrders) {
-                try {
-                    // Check if case number already exists in database
-                    const { data: existingOrder, error: checkError } = await supabase
-                        .from('job_orders')
-                        .select('case_number')
-                        .eq('case_number', order.caseNumber)
-                        .single();
+            // Process in smaller batches to improve performance
+            const batchSize = 5;
+            for (let i = 0; i < pendingOrders.length; i += batchSize) {
+                const batch = pendingOrders.slice(i, i + batchSize);
+                
+                await Promise.allSettled(batch.map(async (order) => {
+                    try {
+                        // Check if case number already exists in database
+                        const { data: existingOrder, error: checkError } = await supabase
+                            .from('job_orders')
+                            .select('case_number')
+                            .eq('case_number', order.caseNumber)
+                            .single();
 
-                    if (checkError && checkError.code !== 'PGRST116') {
-                        // PGRST116 is "not found" error, which is what we want
-                        throw checkError;
+                        if (checkError && checkError.code !== 'PGRST116') {
+                            // PGRST116 is "not found" error, which is what we want
+                            throw checkError;
+                        }
+
+                        if (existingOrder) {
+                            // Case number already exists, mark as duplicate and add to removal list
+                            duplicateCount++;
+                            duplicateCases.push(order.caseNumber);
+                            syncedCases.push(order.caseNumber); // Remove from local storage even if duplicate
+                            console.log(`Skipping duplicate case number: ${order.caseNumber}`);
+                            return;
+                        }
+
+                        // Map the offline data to database format
+                        const dbData = {
+                            case_number: order.caseNumber,
+                            order_date: order.orderDate,
+                            customer_name: order.customerName,
+                            customer_address: order.customerAddress,
+                            customer_email: order.customerEmail,
+                            sku: order.sku,
+                            coverage: order.coverage,
+                            complaint_details: order.complaintDetails,
+                            dispatch_date: order.dispatchDate || null,
+                            dispatch_time: order.dispatchTime || null,
+                            tested_before: order.testedBefore,
+                            tested_after: order.testedAfter,
+                            troubles_found: order.troublesFound,
+                            other_notes: order.otherNotes,
+                            media_urls: order.mediaFiles ? order.mediaFiles.map(file => file.data) : [],
+                            signature_url: order.signatureData,
+                            terms_accepted: order.termsAccepted,
+                            status: 'synced',
+                            created_at: order.createdAt
+                        };
+
+                        const { error } = await supabase
+                            .from('job_orders')
+                            .insert([dbData]);
+
+                        if (error) throw error;
+                        successCount++;
+                        syncedCases.push(order.caseNumber);
+                    } catch (error) {
+                        console.error('Failed to sync order:', order.caseNumber, error);
+                        failCount++;
                     }
-
-                    if (existingOrder) {
-                        // Case number already exists, mark as duplicate and add to removal list
-                        duplicateCount++;
-                        duplicateCases.push(order.caseNumber);
-                        syncedCases.push(order.caseNumber); // Remove from local storage even if duplicate
-                        console.log(`Skipping duplicate case number: ${order.caseNumber}`);
-                        continue;
-                    }
-
-                    // Map the offline data to database format
-                    const dbData = {
-                        case_number: order.caseNumber,
-                        order_date: order.orderDate,
-                        customer_name: order.customerName,
-                        customer_address: order.customerAddress,
-                        customer_email: order.customerEmail,
-                        sku: order.sku,
-                        coverage: order.coverage,
-                        complaint_details: order.complaintDetails,
-                        dispatch_date: order.dispatchDate || null,
-                        dispatch_time: order.dispatchTime || null,
-                        tested_before: order.testedBefore,
-                        tested_after: order.testedAfter,
-                        troubles_found: order.troublesFound,
-                        other_notes: order.otherNotes,
-                        media_urls: order.mediaFiles ? order.mediaFiles.map(file => file.data) : [],
-                        signature_url: order.signatureData,
-                        terms_accepted: order.termsAccepted,
-                        status: 'synced',
-                        created_at: order.createdAt
-                    };
-
-                    const { error } = await supabase
-                        .from('job_orders')
-                        .insert([dbData]);
-
-                    if (error) throw error;
-                    successCount++;
-                    syncedCases.push(order.caseNumber);
-                } catch (error) {
-                    console.error('Failed to sync order:', order.caseNumber, error);
-                    failCount++;
-                }
+                }));
             }
 
             // Remove successfully synced orders (including duplicates) from local storage
@@ -273,9 +297,10 @@ const AdminPage = () => {
         } finally {
             setSyncing(false);
         }
-    };
+    }, [pendingOrders, isSupabaseConfigured, clearSyncedJobOrders, loadJobOrders]);
 
-    if (loading) {
+    // Loading states with better UX
+    if (loading && dataLoading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
                 <div className="text-center">
@@ -283,7 +308,7 @@ const AdminPage = () => {
                         <span className="visually-hidden">Loading...</span>
                     </div>
                     <h5 className="text-muted">Loading Dashboard...</h5>
-                    <p className="text-muted mb-0">Setting up your workspace</p>
+                    <p className="text-muted mb-0">{loadingMessage}</p>
                 </div>
             </div>
         );

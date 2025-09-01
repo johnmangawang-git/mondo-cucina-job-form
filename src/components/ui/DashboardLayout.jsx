@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import PerformanceMonitor from './PerformanceMonitor';
 
 const DashboardLayout = ({ children }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -87,6 +88,9 @@ const DashboardLayout = ({ children }) => {
                 >
                     {children}
                 </div>
+                
+                {/* Performance Monitor - only in development */}
+                <PerformanceMonitor enabled={import.meta.env.DEV} />
             </main>
         </div>
     );

@@ -1,0 +1,5 @@
+# SPA fallback
+/*    /index.html   200
+
+# Force HTTPS
+http://mondo-cucina-job-form.netlify.app/*  https://mondo-cucina-job-form.netlify.app/:splat  301!

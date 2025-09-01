@@ -1,6 +1,11 @@
 [build]
   command = "npm run build"
   publish = "build"
+  # Increase timeout for better reliability
+  command_timeout = 600
+
+[build.environment]
+  NODE_VERSION = "18"
 
 [[redirects]]
   from = "/*"
@@ -14,6 +19,15 @@
   status = 301
   force = true
 
+# Cache headers for assets - optimized for CSS loading
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    X-Content-Type-Options = "nosniff"
+    Accept-Ranges = "bytes"
+    Connection = "keep-alive"
+
 # Cache headers for service worker
 [[headers]]
   for = "/service-worker.js"
@@ -21,7 +35,45 @@
     Cache-Control = "no-cache, no-store, must-revalidate"
     Service-Worker-Allowed = "/"
 
-# Security headers
+# Headers for CSS files - enhanced for connection stability
+[[headers]]
+  for = "/assets/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "text/css; charset=utf-8"
+    X-Content-Type-Options = "nosniff"
+    Accept-Ranges = "bytes"
+    Connection = "keep-alive"
+    Transfer-Encoding = "gzip"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "text/css; charset=utf-8"
+    X-Content-Type-Options = "nosniff"
+    Accept-Ranges = "bytes"
+    Connection = "keep-alive"
+
+[[headers]]
+  for = "/assets/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "application/javascript; charset=utf-8"
+    X-Content-Type-Options = "nosniff"
+    Accept-Ranges = "bytes"
+    Connection = "keep-alive"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "application/javascript; charset=utf-8"
+    X-Content-Type-Options = "nosniff"
+    Accept-Ranges = "bytes"
+    Connection = "keep-alive"
+
+# Security headers for all pages
 [[headers]]
   for = "/*"
   [headers.values]
@@ -29,4 +81,5 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https://*.supabase.co;"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https: cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https: data: cdn.jsdelivr.net; connect-src 'self' https:; manifest-src 'self'; worker-src 'self';"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
