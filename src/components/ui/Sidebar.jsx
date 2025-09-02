@@ -62,9 +62,9 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
     return (
         <>
             {/* Mobile Overlay */}
-            {!isCollapsed && (
+            {!isCollapsed && window.innerWidth < 768 && (
                 <div 
-                    className="sidebar-overlay d-md-none"
+                    className="sidebar-overlay"
                     onClick={onToggle}
                 ></div>
             )}
@@ -87,13 +87,15 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
                             </div>
                         )}
                     </div>
+                    {window.innerWidth < 768 && (
                     <button 
-                        className="sidebar-toggle d-md-none"
+                        className="sidebar-toggle"
                         onClick={onToggle}
                         aria-label="Toggle Sidebar"
                     >
                         <i className="bi bi-x-lg"></i>
                     </button>
+                    )}
                 </div>
 
                 {/* Connection Status */}

@@ -157,6 +157,37 @@
     overflow-x: hidden;
 }
 
+/* Ensure text is always visible with proper contrast */
+.sidebar * {
+    color: inherit;
+}
+
+.sidebar .brand-title {
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.sidebar .brand-subtitle {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.sidebar .nav-label {
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+.sidebar .nav-description {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.sidebar .status-text {
+    color: #ffffff !important;
+}
+
+.sidebar .pending-indicator {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
 .sidebar.collapsed {
     width: 80px;
 }
@@ -164,10 +195,10 @@
 /* Mobile: Hide sidebar by default and improve UX */
 @media (max-width: 767.98px) {
     .sidebar {
-        transform: translateX(-100%);
         width: 280px;
         z-index: 1060; /* Higher z-index for mobile */
         box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
+        transform: translateX(-100%);
     }
     
     .sidebar:not(.collapsed) {
@@ -177,18 +208,6 @@
     /* Improve mobile main content */
     .main-content {
         margin-left: 0 !important;
-        transition: filter 0.3s ease;
-    }
-    
-    /* Add blur effect when sidebar is open on mobile */
-    .main-content:not(.sidebar-collapsed) {
-        filter: blur(2px);
-        pointer-events: none;
-    }
-    
-    .main-content.sidebar-collapsed {
-        filter: none;
-        pointer-events: auto;
     }
 }
 

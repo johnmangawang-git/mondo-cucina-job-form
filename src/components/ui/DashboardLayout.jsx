@@ -48,7 +48,8 @@ const DashboardLayout = ({ children }) => {
                 onClick={handleMainContentClick}
             >
                 {/* Mobile Menu Toggle */}
-                <div className="mobile-header d-md-none">
+                {isMobile && (
+                <div className="mobile-header">
                     <button 
                         className="btn btn-primary mobile-menu-toggle"
                         onClick={(e) => {
@@ -70,9 +71,11 @@ const DashboardLayout = ({ children }) => {
                         </div>
                     )}
                 </div>
+                )}
                 
                 {/* Desktop Toggle Button */}
-                <div className="desktop-toggle d-none d-md-block">
+                {!isMobile && (
+                <div className="desktop-toggle">
                     <button 
                         className="btn btn-outline-secondary btn-sm sidebar-toggle-btn"
                         onClick={toggleSidebar}
@@ -81,6 +84,7 @@ const DashboardLayout = ({ children }) => {
                         <i className={`bi ${sidebarCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
                     </button>
                 </div>
+                )}
                 
                 <div 
                     className="content-wrapper"
@@ -89,8 +93,8 @@ const DashboardLayout = ({ children }) => {
                     {children}
                 </div>
                 
-                {/* Performance Monitor - only in development */}
-                <PerformanceMonitor enabled={import.meta.env.DEV} />
+                {/* Performance Monitor - disabled */}
+                <PerformanceMonitor enabled={false} />
             </main>
         </div>
     );

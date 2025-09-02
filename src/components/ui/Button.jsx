@@ -1,44 +1,35 @@
 import React from 'react';
 
-const Button = ({ 
-    children, 
-    type = 'button', 
-    variant = 'primary', 
-    size = 'medium',
-    disabled = false,
-    onClick,
-    className = '',
-    ...props 
-}) => {
-    const baseClasses = 'btn';
-    const variantClasses = {
-        primary: 'btn-primary',
-        secondary: 'btn-secondary',
-        danger: 'btn-danger',
-        outline: 'btn-outline',
-        success: 'btn-success'
-    };
-    const sizeClasses = {
-        small: 'btn-small',
-        medium: 'btn-medium',
-        large: 'btn-large'
-    };
+// Fresh Button component - rebuilt from scratch
+const Button = (props) => {
+    const {
+        children,
+        type = 'button',
+        variant = 'primary',
+        size = 'medium',
+        disabled = false,
+        onClick,
+        className = '',
+        ...rest
+    } = props;
 
-    const classes = [
-        baseClasses,
-        variantClasses[variant],
-        sizeClasses[size],
-        disabled ? 'btn-disabled' : '',
-        className
-    ].filter(Boolean).join(' ');
+    // Simple class generation
+    const baseClass = 'btn';
+    const variantClass = `btn-${variant}`;
+    const sizeClass = `btn-${size}`;
+    const disabledClass = disabled ? 'btn-disabled' : '';
+    
+    const finalClassName = [baseClass, variantClass, sizeClass, disabledClass, className]
+        .filter(Boolean)
+        .join(' ');
 
     return (
         <button
             type={type}
-            className={classes}
+            className={finalClassName}
             disabled={disabled}
             onClick={onClick}
-            {...props}
+            {...rest}
         >
             {children}
         </button>
