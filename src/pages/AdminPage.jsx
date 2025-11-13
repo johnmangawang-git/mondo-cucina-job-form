@@ -10,7 +10,7 @@ import EditJobOrderModal from '../components/form/EditJobOrderModal';
 const AdminPage = () => {
     const navigate = useNavigate();
     const { getPendingJobOrders, clearSyncedJobOrders } = useOfflineStorage();
-    const { isDesktop } = useDeviceDetection();
+    const { isDesktop, isMobile } = useDeviceDetection();
     const [editingJobOrder, setEditingJobOrder] = useState(null);
     const [jobOrders, setJobOrders] = useState([]);
     const [pendingOrders, setPendingOrders] = useState([]);
@@ -43,7 +43,7 @@ const AdminPage = () => {
         try {
             // Step 1: Load offline data first (fastest)
             const pending = await getPendingJobOrders();
-            setPendingOrders(pending || []);
+            setPendingOrders(Array.isArray(pending) ? pending : []);
             setLoadingMessage('Offline data loaded');
 
             // Step 2: Check online data if configured
@@ -75,7 +75,7 @@ const AdminPage = () => {
                 clearTimeout(timeoutId);
 
                 if (error) throw error;
-                setJobOrders(supabaseOrders || []);
+                setJobOrders(Array.isArray(supabaseOrders) ? supabaseOrders : []);
                 setConnectionError(false);
                 setLoadingMessage('Database connected');
 
@@ -108,9 +108,13 @@ const AdminPage = () => {
 
     // Optimized memoized calculations
     const getAllItems = useCallback(() => {
+        // Ensure both pendingOrders and jobOrders are arrays
+        const safePendingOrders = Array.isArray(pendingOrders) ? pendingOrders : [];
+        const safeJobOrders = Array.isArray(jobOrders) ? jobOrders : [];
+        
         return [
-            ...pendingOrders.map(item => ({...item, type: 'pending'})), 
-            ...jobOrders.map(item => ({...item, type: 'synced'}))
+            ...safePendingOrders.map(item => ({...item, type: 'pending'})), 
+            ...safeJobOrders.map(item => ({...item, type: 'synced'}))
         ];
     }, [pendingOrders, jobOrders]);
 
