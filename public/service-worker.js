@@ -1,19 +1,14 @@
 // Service worker version
-const CACHE_NAME = 'mondo-cucina-v1.1';
+const CACHE_NAME = 'mondo-cucina-v1.3';
 const OFFLINE_URL = '/offline.html';
 
-// Files to cache for offline use - expanded to include all necessary assets
+// Files to cache for offline use - only cache local assets
 const PRECACHE_URLS = [
     '/',
     '/index.html',
     '/offline.html',
     '/manifest.json',
-    // CSS files
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css',
-    // JS files
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
-    // Icons
+    // Local icons
     '/icons/icon-192.png',
     '/icons/icon-512.png',
     '/favicon.ico'
@@ -25,12 +20,11 @@ self.addEventListener('install', event => {
         caches.open(CACHE_NAME)
             .then(cache => {
                 console.log('Opened cache');
-                return cache.addAll(PRECACHE_URLS)
-                    .catch(error => {
-                        console.error('Failed to cache some URLs:', error);
-                        // Continue with the ones that succeeded
-                        return Promise.resolve();
-                    });
+                // Only cache local assets during install
+                return cache.addAll(PRECACHE_URLS);
+            })
+            .catch(error => {
+                console.error('Failed to cache URLs during install:', error);
             })
             .then(() => self.skipWaiting())
     );
@@ -50,7 +44,10 @@ self.addEventListener('activate', event => {
                 })
             );
         })
-            .then(() => self.clients.claim())
+            .then(() => {
+                // Claim clients to ensure the new service worker takes control immediately
+                return self.clients.claim();
+            })
     );
 });
 
@@ -103,24 +100,35 @@ self.addEventListener('fetch', event => {
                     return cachedResponse;
                 }
 
-                // Otherwise fetch from network
-                return fetch(event.request)
-                    .then(response => {
-                        // Cache new responses that are valid
-                        if (response && response.status === 200 && response.type === 'basic') {
-                            const responseToCache = response.clone();
-                            caches.open(CACHE_NAME)
-                                .then(cache => {
-                                    cache.put(event.request, responseToCache);
-                                });
-                        }
-                        return response;
-                    })
-                    .catch(error => {
-                        // For assets that fail to load, return a fallback if available
-                        console.log('Fetch failed for:', event.request.url, error);
-                        return new Response('', { status: 404 });
-                    });
+                // For requests to our own domain, try to cache them
+                const url = new URL(event.request.url);
+                if (url.origin === self.location.origin) {
+                    // Otherwise fetch from network
+                    return fetch(event.request)
+                        .then(response => {
+                            // Cache new responses that are valid and from our domain
+                            if (response && response.status === 200 && response.type === 'basic') {
+                                const responseToCache = response.clone();
+                                caches.open(CACHE_NAME)
+                                    .then(cache => {
+                                        cache.put(event.request, responseToCache);
+                                    });
+                            }
+                            return response;
+                        })
+                        .catch(error => {
+                            // For assets that fail to load, return a fallback if available
+                            console.log('Fetch failed for:', event.request.url, error);
+                            return new Response('', { status: 404 });
+                        });
+                } else {
+                    // For external requests, just fetch them (don't cache)
+                    return fetch(event.request)
+                        .catch(error => {
+                            console.log('External fetch failed for:', event.request.url, error);
+                            return new Response('', { status: 404 });
+                        });
+                }
             })
     );
 });

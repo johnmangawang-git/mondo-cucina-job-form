@@ -21,7 +21,6 @@ const AdminPage = () => {
     const [connectionError, setConnectionError] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('Initializing...');
-    const { isMobile } = useDeviceDetection();
 
     // Memoize environment check to avoid repeated validations
     const isSupabaseConfigured = useMemo(() => {
