@@ -1613,3 +1613,107 @@ Admin Page Styles */
         height: 16px;
     }
 }
+
+/* Edit Job Order Modal Styles */
+.edit-job-order-modal.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+    overflow: auto;
+}
+
+.edit-job-order-modal .modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+    position: relative;
+}
+
+.edit-job-order-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.edit-job-order-modal .modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
+.edit-job-order-modal .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #7f8c8d;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.edit-job-order-modal .modal-close-btn:hover {
+    background-color: #f1f2f6;
+    color: #2c3e50;
+}
+
+.edit-job-order-modal .modal-body {
+    padding: 1rem;
+}
+
+/* Responsive adjustments for modal */
+@media (max-width: 768px) {
+    .edit-job-order-modal.modal-overlay {
+        padding: 10px;
+    }
+    
+    .edit-job-order-modal .modal-content {
+        max-height: 95vh;
+    }
+    
+    .edit-job-order-modal .modal-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .edit-job-order-modal .modal-body {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .edit-job-order-modal.modal-overlay {
+        padding: 5px;
+    }
+    
+    .edit-job-order-modal .modal-header {
+        padding: 0.75rem;
+    }
+    
+    .edit-job-order-modal .modal-body {
+        padding: 0.5rem;
+    }
+    
+    .edit-job-order-modal .modal-header h2 {
+        font-size: 1.1rem;
+    }
+}

@@ -45,9 +45,30 @@
             font-size: 16px;
             cursor: pointer;
             margin-top: 20px;
+            margin-right: 10px;
         }
         .retry-btn:hover {
             background-color: #2980b9;
+        }
+        .launch-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-left: 10px;
+        }
+        .launch-btn:hover {
+            background-color: #219653;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
     </style>
 </head>
@@ -60,9 +81,14 @@
             Don't worry - you can still use the job order form, 
             and your data will sync when you're back online.
         </p>
-        <button class="retry-btn" onclick="window.location.reload()">
-            Try Again
-        </button>
+        <div class="btn-container">
+            <button class="retry-btn" onclick="window.location.reload()">
+                Try Again
+            </button>
+            <button class="launch-btn" onclick="window.location.href='/'">
+                Launch App
+            </button>
+        </div>
     </div>
 </body>
 </html>

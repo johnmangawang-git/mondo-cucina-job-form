@@ -12,7 +12,3 @@ export const registerServiceWorker = () => {
         });
     }
 };
-
-// src/index.js
-import { registerServiceWorker } from './serviceWorker';
-registerServiceWorker();

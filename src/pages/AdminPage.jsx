@@ -4,10 +4,14 @@ import Button from '../components/ui/Button';
 import { useOfflineStorage } from '../hooks/useOfflineStorage';
 import { supabase } from '../api/supabase';
 import { downloadAsCSV, downloadAsPDF } from '../utils/exportUtils';
+import { useDeviceDetection } from '../hooks/useDeviceDetection';
+import EditJobOrderModal from '../components/form/EditJobOrderModal';
 
 const AdminPage = () => {
     const navigate = useNavigate();
     const { getPendingJobOrders, clearSyncedJobOrders } = useOfflineStorage();
+    const { isDesktop } = useDeviceDetection();
+    const [editingJobOrder, setEditingJobOrder] = useState(null);
     const [jobOrders, setJobOrders] = useState([]);
     const [pendingOrders, setPendingOrders] = useState([]);
     const [loading, setLoading] = useState(false); // Start with false for immediate UI
@@ -17,6 +21,7 @@ const AdminPage = () => {
     const [connectionError, setConnectionError] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('Initializing...');
+    const { isMobile } = useDeviceDetection();
 
     // Memoize environment check to avoid repeated validations
     const isSupabaseConfigured = useMemo(() => {
@@ -301,6 +306,22 @@ const AdminPage = () => {
         }
     }, [pendingOrders, isSupabaseConfigured, clearSyncedJobOrders, loadJobOrders]);
 
+    const handleEditJobOrder = (jobOrder) => {
+        if (isDesktop) {
+            setEditingJobOrder(jobOrder);
+        }
+    };
+
+    const handleSaveEditedJobOrder = (updatedJobOrder) => {
+        // Refresh the data to show updated job order
+        loadJobOrders();
+        alert('Job order updated successfully!');
+    };
+
+    const handleCloseEditModal = () => {
+        setEditingJobOrder(null);
+    };
+
     // Loading states with better UX
     if (loading && dataLoading) {
         return (
@@ -456,7 +477,17 @@ const AdminPage = () => {
                                             </label>
                                             <h3>Case: {order.caseNumber}</h3>
                                         </div>
-                                        {getStatusBadge('pending')}
+                                        <div className="card-header-right">
+                                            {getStatusBadge('pending')}
+                                            {isDesktop && (
+                                                <button
+                                                    className="btn btn-sm btn-outline-primary ms-2"
+                                                    onClick={() => handleEditJobOrder(order)}
+                                                >
+                                                    <i className="bi bi-pencil"></i> Edit
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 <div className="card-body">
                                     <p><strong>Customer:</strong> {order.customerName}</p>
@@ -567,7 +598,17 @@ const AdminPage = () => {
                                             </label>
                                             <h3>Case: {order.case_number}</h3>
                                         </div>
-                                        {getStatusBadge(order.status)}
+                                        <div className="card-header-right">
+                                            {getStatusBadge(order.status)}
+                                            {isDesktop && (
+                                                <button
+                                                    className="btn btn-sm btn-outline-primary ms-2"
+                                                    onClick={() => handleEditJobOrder(order)}
+                                                >
+                                                    <i className="bi bi-pencil"></i> Edit
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 <div className="card-body">
                                     <p><strong>Customer:</strong> {order.customer_name}</p>
@@ -621,6 +662,14 @@ const AdminPage = () => {
                     </div>
                 )}
             </div>
+            {editingJobOrder && (
+                <EditJobOrderModal
+                    jobOrder={editingJobOrder}
+                    onClose={handleCloseEditModal}
+                    onSave={handleSaveEditedJobOrder}
+                    isOnline={!connectionError}
+                />
+            )}
         </div>
     );
 };

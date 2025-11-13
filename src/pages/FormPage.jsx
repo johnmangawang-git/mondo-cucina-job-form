@@ -21,14 +21,19 @@ const FormPage = () => {
         customerAddress: '',
         customerEmail: '',
         sku: '',
+        serialNumber: '',
         coverage: [],
+        expiredWarranty: false,
         complaintDetails: '',
-        dispatchDate: '',
-        dispatchTime: '',
+        timeIn: '',
+        timeOut: '',
+        technicianName1: '',
+        technicianName2: '',
         testedBefore: false,
         testedAfter: false,
-        troublesFound: 0,
+        findingsDiagnosis: '',
         otherNotes: '',
+        partsNeeded: [{ partName: '', image: null }],
         mediaFiles: [],
         signatureData: null,
         termsAccepted: false
@@ -50,7 +55,7 @@ const FormPage = () => {
         if (!formData.customerName.trim()) newErrors.customerName = 'Customer name is required';
         if (!formData.customerAddress.trim()) newErrors.customerAddress = 'Customer address is required';
         if (!formData.sku.trim()) newErrors.sku = 'SKU is required';
-        if (formData.coverage.length === 0) newErrors.coverage = 'Coverage type is required';
+        if (formData.coverage.length === 0 && !formData.expiredWarranty) newErrors.coverage = 'At least one coverage type is required';
         if (!formData.termsAccepted) newErrors.termsAccepted = 'You must accept the terms and conditions';
         
         if (formData.customerEmail && !/\S+@\S+\.\S+/.test(formData.customerEmail)) {
@@ -59,6 +64,31 @@ const FormPage = () => {
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    const handlePartNameChange = (index, value) => {
+        const newPartsNeeded = [...formData.partsNeeded];
+        newPartsNeeded[index].partName = value;
+        setFormData(prev => ({ ...prev, partsNeeded: newPartsNeeded }));
+    };
+
+    const handlePartImageUpload = (index, imageFile) => {
+        const newPartsNeeded = [...formData.partsNeeded];
+        newPartsNeeded[index].image = imageFile;
+        setFormData(prev => ({ ...prev, partsNeeded: newPartsNeeded }));
+    };
+
+    const addNewPartRow = () => {
+        setFormData(prev => ({
+            ...prev,
+            partsNeeded: [...prev.partsNeeded, { partName: '', image: null }]
+        }));
+    };
+
+    const removePartRow = (index) => {
+        if (formData.partsNeeded.length <= 1) return;
+        const newPartsNeeded = formData.partsNeeded.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, partsNeeded: newPartsNeeded }));
     };
 
     const handleSubmit = async (e) => {
@@ -79,14 +109,19 @@ const FormPage = () => {
                 customer_address: formData.customerAddress,
                 customer_email: formData.customerEmail,
                 sku: formData.sku,
+                serial_number: formData.serialNumber,
                 coverage: formData.coverage,
+                expired_warranty: formData.expiredWarranty,
                 complaint_details: formData.complaintDetails,
-                dispatch_date: formData.dispatchDate || null,
-                dispatch_time: formData.dispatchTime || null,
+                time_in: formData.timeIn,
+                time_out: formData.timeOut,
+                technician_name_1: formData.technicianName1,
+                technician_name_2: formData.technicianName2,
                 tested_before: formData.testedBefore,
                 tested_after: formData.testedAfter,
-                troubles_found: formData.troublesFound,
+                findings_diagnosis: formData.findingsDiagnosis,
                 other_notes: formData.otherNotes,
+                parts_needed: formData.partsNeeded,
                 media_urls: convertedMediaFiles.map(file => file.data), // Map mediaFiles to media_urls
                 signature_url: formData.signatureData, // Map signatureData to signature_url
                 terms_accepted: formData.termsAccepted,
@@ -255,6 +290,17 @@ const FormPage = () => {
                     </div>
                     
                     <div className="form-group">
+                        <label htmlFor="serialNumber">Serial Number</label>
+                        <input
+                            type="text"
+                            id="serialNumber"
+                            value={formData.serialNumber}
+                            onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                            placeholder="Enter appliance serial number"
+                        />
+                    </div>
+                    
+                    <div className="form-group">
                         <label>Coverage Type *</label>
                         <div className="checkbox-group">
                             <label className="checkbox-label">
@@ -283,6 +329,14 @@ const FormPage = () => {
                                 />
                                 Warranty (WTY)
                             </label>
+                            <label className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.expiredWarranty}
+                                    onChange={(e) => handleInputChange('expiredWarranty', e.target.checked)}
+                                />
+                                Expired Warranty
+                            </label>
                         </div>
                         {errors.coverage && <span className="error-text">{errors.coverage}</span>}
                     </div>
@@ -304,22 +358,46 @@ const FormPage = () => {
                 <FormSection title="Dispatch Information">
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="dispatchDate">Dispatch Date</label>
+                            <label htmlFor="timeIn">Time In</label>
                             <input
-                                type="date"
-                                id="dispatchDate"
-                                value={formData.dispatchDate}
-                                onChange={(e) => handleInputChange('dispatchDate', e.target.value)}
+                                type="text"
+                                id="timeIn"
+                                value={formData.timeIn}
+                                onChange={(e) => handleInputChange('timeIn', e.target.value)}
+                                placeholder="Enter time in"
                             />
                         </div>
                         
                         <div className="form-group">
-                            <label htmlFor="dispatchTime">Dispatch Time</label>
+                            <label htmlFor="timeOut">Time Out</label>
                             <input
-                                type="time"
-                                id="dispatchTime"
-                                value={formData.dispatchTime}
-                                onChange={(e) => handleInputChange('dispatchTime', e.target.value)}
+                                type="text"
+                                id="timeOut"
+                                value={formData.timeOut}
+                                onChange={(e) => handleInputChange('timeOut', e.target.value)}
+                                placeholder="Enter time out"
+                            />
+                        </div>
+                        
+                        <div className="form-group">
+                            <label htmlFor="technicianName1">Technician Name (1)</label>
+                            <input
+                                type="text"
+                                id="technicianName1"
+                                value={formData.technicianName1}
+                                onChange={(e) => handleInputChange('technicianName1', e.target.value)}
+                                placeholder="Enter first technician name"
+                            />
+                        </div>
+                        
+                        <div className="form-group">
+                            <label htmlFor="technicianName2">Technician Name (2)</label>
+                            <input
+                                type="text"
+                                id="technicianName2"
+                                value={formData.technicianName2}
+                                onChange={(e) => handleInputChange('technicianName2', e.target.value)}
+                                placeholder="Enter second technician name"
                             />
                         </div>
                     </div>
@@ -351,13 +429,13 @@ const FormPage = () => {
                     </div>
                     
                     <div className="form-group">
-                        <label htmlFor="troublesFound">Number of Troubles Found</label>
-                        <input
-                            type="number"
-                            id="troublesFound"
-                            min="0"
-                            value={formData.troublesFound}
-                            onChange={(e) => handleInputChange('troublesFound', parseInt(e.target.value) || 0)}
+                        <label htmlFor="findingsDiagnosis">Findings and Diagnosis</label>
+                        <textarea
+                            id="findingsDiagnosis"
+                            value={formData.findingsDiagnosis}
+                            onChange={(e) => handleInputChange('findingsDiagnosis', e.target.value)}
+                            placeholder="Enter findings and diagnosis"
+                            rows="3"
                         />
                     </div>
                     
@@ -370,6 +448,92 @@ const FormPage = () => {
                             placeholder="Any additional notes or observations"
                             rows="3"
                         />
+                    </div>
+                </FormSection>
+
+                <FormSection title="Parts Needed">
+                    {formData.partsNeeded.map((part, index) => (
+                        <div key={index} className="form-row mb-3 p-2 border rounded">
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <div className="form-group">
+                                        <label htmlFor={`partName-${index}`}>Part Name</label>
+                                        <input
+                                            type="text"
+                                            id={`partName-${index}`}
+                                            className="form-control"
+                                            value={part.partName}
+                                            onChange={(e) => handlePartNameChange(index, e.target.value)}
+                                            placeholder="Enter part name"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="form-group">
+                                        <label>Part Image</label>
+                                        <div className="d-flex align-items-center">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                capture="environment"
+                                                className="form-control"
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        const file = e.target.files[0];
+                                                        const reader = new FileReader();
+                                                        reader.onload = (event) => {
+                                                            handlePartImageUpload(index, {
+                                                                name: file.name,
+                                                                data: event.target.result,
+                                                                type: file.type,
+                                                                size: file.size
+                                                            });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                            {part.image && (
+                                                <div className="ms-2">
+                                                    <img 
+                                                        src={part.image.data} 
+                                                        alt="Part preview"
+                                                        style={{
+                                                            width: '50px',
+                                                            height: '50px',
+                                                            objectFit: 'cover',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #ddd'
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {formData.partsNeeded.length > 1 && (
+                                <div className="text-end">
+                                    <button
+                                        type="button"
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => removePartRow(index)}
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    <div className="text-center mt-3">
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={addNewPartRow}
+                        >
+                            <i className="bi bi-plus-circle me-2"></i>
+                            Add Parts
+                        </button>
                     </div>
                 </FormSection>
 
