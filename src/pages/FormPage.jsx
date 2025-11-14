@@ -101,32 +101,26 @@ const FormPage = () => {
         const convertedMediaFiles = formData.mediaFiles;
         
         try {
-            // Map form data to database field names
+            // Map form data to database field names (match actual database schema)
             const jobOrderData = {
                 case_number: formData.caseNumber,
                 order_date: formData.orderDate,
                 customer_name: formData.customerName,
                 customer_address: formData.customerAddress,
-                customer_email: formData.customerEmail,
+                customer_email: formData.customerEmail || null,
                 sku: formData.sku,
-                serial_number: formData.serialNumber,
-                coverage: formData.coverage,
-                expired_warranty: formData.expiredWarranty,
-                complaint_details: formData.complaintDetails,
-                time_in: formData.timeIn,
-                time_out: formData.timeOut,
-                technician_name_1: formData.technicianName1,
-                technician_name_2: formData.technicianName2,
-                tested_before: formData.testedBefore,
-                tested_after: formData.testedAfter,
-                findings_diagnosis: formData.findingsDiagnosis,
-                other_notes: formData.otherNotes,
-                parts_needed: formData.partsNeeded,
+                coverage: Array.isArray(formData.coverage) ? formData.coverage.filter(c => ['EXP', 'WTY'].includes(c)) : [],
+                complaint_details: formData.complaintDetails || null,
+                dispatch_date: formData.orderDate || null, // Using order date as dispatch date
+                dispatch_time: null, // Not collecting time in form
+                tested_before: Boolean(formData.testedBefore),
+                tested_after: Boolean(formData.testedAfter),
+                troubles_found: 0, // Not collecting this in form
+                other_notes: formData.otherNotes || null,
                 media_urls: convertedMediaFiles.map(file => file.data), // Map mediaFiles to media_urls
-                signature_url: formData.signatureData, // Map signatureData to signature_url
-                terms_accepted: formData.termsAccepted,
-                status: isOnline ? 'synced' : 'pending',
-                created_at: new Date().toISOString()
+                signature_url: formData.signatureData || null, // Map signatureData to signature_url
+                terms_accepted: Boolean(formData.termsAccepted),
+                status: isOnline ? 'synced' : 'pending'
             };
             
             console.log('Saving job order with signature:', formData.signatureData ? 'YES' : 'NO');

@@ -273,32 +273,26 @@ const AdminPage = () => {
                             return;
                         }
 
-                        // Map the offline data to database format
+                        // Map the offline data to database format (match actual database schema)
                         const dbData = {
                             case_number: order.caseNumber,
                             order_date: order.orderDate,
                             customer_name: order.customerName,
                             customer_address: order.customerAddress,
-                            customer_email: order.customerEmail,
+                            customer_email: order.customerEmail || null,
                             sku: order.sku,
-                            serial_number: order.serialNumber || '',
-                            coverage: order.coverage || [],
-                            expired_warranty: order.expiredWarranty || false,
-                            complaint_details: order.complaintDetails,
-                            time_in: order.timeIn || null,
-                            time_out: order.timeOut || null,
-                            technician_name_1: order.technicianName1 || '',
-                            technician_name_2: order.technicianName2 || '',
-                            tested_before: order.testedBefore,
-                            tested_after: order.testedAfter,
-                            findings_diagnosis: order.findingsDiagnosis || '',
-                            other_notes: order.otherNotes,
-                            parts_needed: order.partsNeeded || [],
+                            coverage: Array.isArray(order.coverage) ? order.coverage.filter(c => ['EXP', 'WTY'].includes(c)) : [],
+                            complaint_details: order.complaintDetails || null,
+                            dispatch_date: order.orderDate || null, // Using order date as dispatch date
+                            dispatch_time: null, // Not collecting time in form
+                            tested_before: Boolean(order.testedBefore),
+                            tested_after: Boolean(order.testedAfter),
+                            troubles_found: 0, // Not collecting this in form
+                            other_notes: order.otherNotes || null,
                             media_urls: order.mediaFiles ? order.mediaFiles.map(file => file.data) : [],
-                            signature_url: order.signatureData,
-                            terms_accepted: order.termsAccepted,
-                            status: 'synced',
-                            created_at: order.createdAt
+                            signature_url: order.signatureData || null,
+                            terms_accepted: Boolean(order.termsAccepted),
+                            status: 'synced'
                         };
 
                         const { error } = await supabase
