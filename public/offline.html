@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -81,6 +81,9 @@
             Don't worry - you can still use the job order form, 
             and your data will sync when you're back online.
         </p>
+        <p>
+            <strong>Tip:</strong> You can install this app on your device for better offline access!
+        </p>
         <div class="btn-container">
             <button class="retry-btn" onclick="window.location.reload()">
                 Try Again
@@ -90,5 +93,14 @@
             </button>
         </div>
     </div>
+    <script>
+        // Check if app is installed and update UI accordingly
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+                // App is installed
+                document.querySelector('.launch-btn').textContent = 'Open App';
+            }
+        });
+    </script>
 </body>
 </html>

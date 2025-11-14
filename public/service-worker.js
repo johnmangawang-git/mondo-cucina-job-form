@@ -1,17 +1,25 @@
 // Service worker version
-const CACHE_NAME = 'mondo-cucina-v1.3';
+const CACHE_NAME = 'mondo-cucina-v1.2';
 const OFFLINE_URL = '/offline.html';
 
-// Files to cache for offline use - only cache local assets
+// Files to cache for offline use - expanded to include all necessary assets
 const PRECACHE_URLS = [
     '/',
     '/index.html',
     '/offline.html',
     '/manifest.json',
-    // Local icons
+    // CSS files
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
+    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css',
+    // JS files
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
+    // Icons
     '/icons/icon-192.png',
     '/icons/icon-512.png',
-    '/favicon.ico'
+    '/favicon.ico',
+    // Additional assets for better offline experience
+    '/src/main.jsx',
+    '/src/App.jsx'
 ];
 
 // Install event - caching core assets
@@ -20,11 +28,12 @@ self.addEventListener('install', event => {
         caches.open(CACHE_NAME)
             .then(cache => {
                 console.log('Opened cache');
-                // Only cache local assets during install
-                return cache.addAll(PRECACHE_URLS);
-            })
-            .catch(error => {
-                console.error('Failed to cache URLs during install:', error);
+                return cache.addAll(PRECACHE_URLS)
+                    .catch(error => {
+                        console.error('Failed to cache some URLs:', error);
+                        // Continue with the ones that succeeded
+                        return Promise.resolve();
+                    });
             })
             .then(() => self.skipWaiting())
     );
@@ -44,10 +53,7 @@ self.addEventListener('activate', event => {
                 })
             );
         })
-            .then(() => {
-                // Claim clients to ensure the new service worker takes control immediately
-                return self.clients.claim();
-            })
+            .then(() => self.clients.claim())
     );
 });
 
@@ -59,12 +65,19 @@ self.addEventListener('fetch', event => {
     // For navigation requests (page loads), serve cached content or offline page
     if (event.request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request)
-                .catch(() => {
-                    // Try to serve from cache first
-                    return caches.match(event.request)
-                        .then(response => {
-                            return response || caches.match('/')
+            // Try cache first for immediate loading
+            caches.match(event.request)
+                .then(response => {
+                    // Return cached response if found
+                    if (response) {
+                        return response;
+                    }
+                    
+                    // Otherwise try network
+                    return fetch(event.request)
+                        .catch(() => {
+                            // If network fails, try to serve index.html for SPA routing
+                            return caches.match('/')
                                 .then(indexResponse => {
                                     return indexResponse || caches.match(OFFLINE_URL);
                                 });
@@ -100,35 +113,24 @@ self.addEventListener('fetch', event => {
                     return cachedResponse;
                 }
 
-                // For requests to our own domain, try to cache them
-                const url = new URL(event.request.url);
-                if (url.origin === self.location.origin) {
-                    // Otherwise fetch from network
-                    return fetch(event.request)
-                        .then(response => {
-                            // Cache new responses that are valid and from our domain
-                            if (response && response.status === 200 && response.type === 'basic') {
-                                const responseToCache = response.clone();
-                                caches.open(CACHE_NAME)
-                                    .then(cache => {
-                                        cache.put(event.request, responseToCache);
-                                    });
-                            }
-                            return response;
-                        })
-                        .catch(error => {
-                            // For assets that fail to load, return a fallback if available
-                            console.log('Fetch failed for:', event.request.url, error);
-                            return new Response('', { status: 404 });
-                        });
-                } else {
-                    // For external requests, just fetch them (don't cache)
-                    return fetch(event.request)
-                        .catch(error => {
-                            console.log('External fetch failed for:', event.request.url, error);
-                            return new Response('', { status: 404 });
-                        });
-                }
+                // Otherwise fetch from network
+                return fetch(event.request)
+                    .then(response => {
+                        // Cache new responses that are valid
+                        if (response && response.status === 200 && response.type === 'basic') {
+                            const responseToCache = response.clone();
+                            caches.open(CACHE_NAME)
+                                .then(cache => {
+                                    cache.put(event.request, responseToCache);
+                                });
+                        }
+                        return response;
+                    })
+                    .catch(error => {
+                        // For assets that fail to load, return a fallback if available
+                        console.log('Fetch failed for:', event.request.url, error);
+                        return new Response('', { status: 404 });
+                    });
             })
     );
 });
