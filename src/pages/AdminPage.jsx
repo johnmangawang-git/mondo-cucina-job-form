@@ -200,6 +200,33 @@ const AdminPage = () => {
             return;
         }
 
+        // Test Supabase connection before syncing
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const { data, error } = await supabase
+                .from('job_orders')
+                .select('id')
+                .limit(1)
+                .abortSignal(controller.signal);
+            
+            clearTimeout(timeoutId);
+            
+            if (error) {
+                if (error.message && (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED'))) {
+                    console.error('Network error during connection test:', error);
+                    alert('❌ Cannot connect to the database. Please check your internet connection and database configuration.\n\nOrders remain in local storage.');
+                    return;
+                }
+                // Other errors might be acceptable, continue with sync
+            }
+        } catch (connectionError) {
+            console.error('Supabase connection test failed:', connectionError);
+            alert('❌ Cannot connect to the database. Please check your internet connection and database configuration.\n\nOrders remain in local storage.');
+            return;
+        }
+
         setSyncing(true);
         let successCount = 0;
         let failCount = 0;
@@ -222,9 +249,19 @@ const AdminPage = () => {
                             .eq('case_number', order.caseNumber)
                             .single();
 
-                        if (checkError && checkError.code !== 'PGRST116') {
-                            // PGRST116 is "not found" error, which is what we want
-                            throw checkError;
+                        // Handle connection errors specifically
+                        if (checkError) {
+                            if (checkError.message && (checkError.message.includes('fetch') || checkError.message.includes('Failed to fetch') || checkError.message.includes('ERR_NAME_NOT_RESOLVED'))) {
+                                // Network error - treat as connection failure, not duplicate
+                                console.error('Network error during duplicate check for order:', order.caseNumber, checkError);
+                                throw new Error('Network connection failed during sync');
+                            }
+                            
+                            // PGRST116 is "not found" error, which is what we want for new records
+                            if (checkError.code !== 'PGRST116') {
+                                console.error('Database check error for order:', order.caseNumber, checkError);
+                                throw checkError;
+                            }
                         }
 
                         if (existingOrder) {
@@ -244,14 +281,19 @@ const AdminPage = () => {
                             customer_address: order.customerAddress,
                             customer_email: order.customerEmail,
                             sku: order.sku,
-                            coverage: order.coverage,
+                            serial_number: order.serialNumber || '',
+                            coverage: order.coverage || [],
+                            expired_warranty: order.expiredWarranty || false,
                             complaint_details: order.complaintDetails,
-                            dispatch_date: order.dispatchDate || null,
-                            dispatch_time: order.dispatchTime || null,
+                            time_in: order.timeIn || null,
+                            time_out: order.timeOut || null,
+                            technician_name_1: order.technicianName1 || '',
+                            technician_name_2: order.technicianName2 || '',
                             tested_before: order.testedBefore,
                             tested_after: order.testedAfter,
-                            troubles_found: order.troublesFound,
+                            findings_diagnosis: order.findingsDiagnosis || '',
                             other_notes: order.otherNotes,
+                            parts_needed: order.partsNeeded || [],
                             media_urls: order.mediaFiles ? order.mediaFiles.map(file => file.data) : [],
                             signature_url: order.signatureData,
                             terms_accepted: order.termsAccepted,
@@ -263,17 +305,28 @@ const AdminPage = () => {
                             .from('job_orders')
                             .insert([dbData]);
 
-                        if (error) throw error;
+                        if (error) {
+                            // Handle connection errors specifically
+                            if (error.message && (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED'))) {
+                                console.error('Network error during insert for order:', order.caseNumber, error);
+                                throw new Error('Network connection failed during sync');
+                            }
+                            
+                            console.error('Insert error for order:', order.caseNumber, error);
+                            throw error;
+                        }
                         successCount++;
                         syncedCases.push(order.caseNumber);
                     } catch (error) {
                         console.error('Failed to sync order:', order.caseNumber, error);
                         failCount++;
+                        // Don't add to syncedCases if failed - keep in local storage
                     }
                 }));
             }
 
-            // Remove successfully synced orders (including duplicates) from local storage
+            // ONLY remove successfully synced orders (including duplicates) from local storage
+            // Failed orders should remain in local storage for retry
             if (syncedCases.length > 0) {
                 await clearSyncedJobOrders(syncedCases);
                 console.log(`Removed ${syncedCases.length} synced orders from local storage:`, syncedCases);
@@ -288,11 +341,11 @@ const AdminPage = () => {
                 message += `\n⚠️ Removed ${duplicateCount} duplicate case(s) from pending: ${duplicateCases.join(', ')}`;
             }
             if (failCount > 0) {
-                message += `\n❌ ${failCount} failed to sync due to errors.`;
+                message += `\n❌ ${failCount} failed to sync due to errors. These orders remain in local storage for retry.`;
             }
             
             if (successCount === 0 && duplicateCount === 0 && failCount > 0) {
-                message = '❌ Failed to sync any job orders. Please check your database connection.';
+                message = '❌ Failed to sync any job orders. Please check your database connection. Orders remain in local storage.';
             } else if (successCount === 0 && duplicateCount > 0) {
                 message = `ℹ️ All ${duplicateCount} job orders were already synced. Removed duplicates from pending list.`;
             }
@@ -303,7 +356,7 @@ const AdminPage = () => {
             loadJobOrders();
         } catch (error) {
             console.error('Sync error:', error);
-            alert('❌ Sync failed. Please check your database connection and try again.');
+            alert('❌ Sync failed. Please check your database connection and try again. Orders remain in local storage.');
         } finally {
             setSyncing(false);
         }
@@ -311,7 +364,27 @@ const AdminPage = () => {
 
     const handleEditJobOrder = (jobOrder) => {
         if (isDesktop) {
-            setEditingJobOrder(jobOrder);
+            // Ensure all fields are properly passed to the edit modal
+            setEditingJobOrder({
+                ...jobOrder,
+                // Ensure parts_needed is properly structured
+                parts_needed: jobOrder.parts_needed || jobOrder.partsNeeded || [],
+                // Ensure media_urls is properly structured
+                media_urls: jobOrder.media_urls || jobOrder.mediaFiles || [],
+                // Ensure all boolean fields are properly set
+                expired_warranty: jobOrder.expired_warranty !== undefined ? 
+                    jobOrder.expired_warranty : 
+                    (jobOrder.expiredWarranty || false),
+                tested_before: jobOrder.tested_before !== undefined ? 
+                    jobOrder.tested_before : 
+                    (jobOrder.testedBefore || false),
+                tested_after: jobOrder.tested_after !== undefined ? 
+                    jobOrder.tested_after : 
+                    (jobOrder.testedAfter || false),
+                terms_accepted: jobOrder.terms_accepted !== undefined ? 
+                    jobOrder.terms_accepted : 
+                    (jobOrder.termsAccepted || false)
+            });
         }
     };
 
@@ -496,6 +569,42 @@ const AdminPage = () => {
                                     <p><strong>Customer:</strong> {order.customerName}</p>
                                     <p><strong>SKU:</strong> {order.sku}</p>
                                     <p><strong>Date:</strong> {formatDate(order.createdAt)}</p>
+                                    {order.serialNumber && (
+                                        <p><strong>Serial Number:</strong> {order.serialNumber}</p>
+                                    )}
+                                    {order.coverage && order.coverage.length > 0 && (
+                                        <p><strong>Coverage:</strong> {order.coverage.join(', ')}</p>
+                                    )}
+                                    {order.expiredWarranty && (
+                                        <p><strong>Expired Warranty:</strong> Yes</p>
+                                    )}
+                                    {order.timeIn && (
+                                        <p><strong>Time In:</strong> {order.timeIn}</p>
+                                    )}
+                                    {order.timeOut && (
+                                        <p><strong>Time Out:</strong> {order.timeOut}</p>
+                                    )}
+                                    {order.technicianName1 && (
+                                        <p><strong>Technician 1:</strong> {order.technicianName1}</p>
+                                    )}
+                                    {order.technicianName2 && (
+                                        <p><strong>Technician 2:</strong> {order.technicianName2}</p>
+                                    )}
+                                    {order.findingsDiagnosis && (
+                                        <p><strong>Findings/Diagnosis:</strong> {order.findingsDiagnosis}</p>
+                                    )}
+                                    {order.partsNeeded && order.partsNeeded.length > 0 && (
+                                        <div>
+                                            <p><strong>Parts Needed:</strong></p>
+                                            <ul>
+                                                {order.partsNeeded.map((part, index) => (
+                                                    <li key={index}>
+                                                        {part.partName || part}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                     {order.signatureData && (
                                         <div className="signature-preview">
                                             <p><strong>Signature:</strong></p>
@@ -617,8 +726,41 @@ const AdminPage = () => {
                                     <p><strong>Customer:</strong> {order.customer_name}</p>
                                     <p><strong>SKU:</strong> {order.sku}</p>
                                     <p><strong>Date:</strong> {formatDate(order.created_at)}</p>
-                                    {order.coverage && (
+                                    {order.serial_number && (
+                                        <p><strong>Serial Number:</strong> {order.serial_number}</p>
+                                    )}
+                                    {order.coverage && order.coverage.length > 0 && (
                                         <p><strong>Coverage:</strong> {order.coverage.join(', ')}</p>
+                                    )}
+                                    {order.expired_warranty && (
+                                        <p><strong>Expired Warranty:</strong> Yes</p>
+                                    )}
+                                    {order.time_in && (
+                                        <p><strong>Time In:</strong> {order.time_in}</p>
+                                    )}
+                                    {order.time_out && (
+                                        <p><strong>Time Out:</strong> {order.time_out}</p>
+                                    )}
+                                    {order.technician_name_1 && (
+                                        <p><strong>Technician 1:</strong> {order.technician_name_1}</p>
+                                    )}
+                                    {order.technician_name_2 && (
+                                        <p><strong>Technician 2:</strong> {order.technician_name_2}</p>
+                                    )}
+                                    {order.findings_diagnosis && (
+                                        <p><strong>Findings/Diagnosis:</strong> {order.findings_diagnosis}</p>
+                                    )}
+                                    {order.parts_needed && order.parts_needed.length > 0 && (
+                                        <div>
+                                            <p><strong>Parts Needed:</strong></p>
+                                            <ul>
+                                                {order.parts_needed.map((part, index) => (
+                                                    <li key={index}>
+                                                        {part.partName || part}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     )}
                                     {order.signature_url && (
                                         <div className="signature-preview">
@@ -646,10 +788,10 @@ const AdminPage = () => {
                                                 {order.media_urls.map((url, fileIndex) => (
                                                     <div key={fileIndex} className="media-item">
                                                         <img 
-                                                            src={url} 
+                                                            src={typeof url === 'string' ? url : url.data} 
                                                             alt={`Media file ${fileIndex + 1}`}
                                                             className="media-image"
-                                                            onClick={() => window.open(url, '_blank')}
+                                                            onClick={() => window.open(typeof url === 'string' ? url : url.data, '_blank')}
                                                         />
                                                     </div>
                                                 ))}

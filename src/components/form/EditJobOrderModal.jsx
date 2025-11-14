@@ -9,27 +9,37 @@ const EditJobOrderModal = ({ jobOrder, onClose, onSave, isOnline }) => {
     const { saveJobOrder } = useOfflineStorage();
     const [formData, setFormData] = useState({
         caseNumber: jobOrder.case_number || jobOrder.caseNumber || '',
-        orderDate: jobOrder.order_date || jobOrder.orderDate || '',
+        orderDate: jobOrder.order_date || jobOrder.orderDate || new Date().toISOString().split('T')[0],
         customerName: jobOrder.customer_name || jobOrder.customerName || '',
         customerAddress: jobOrder.customer_address || jobOrder.customerAddress || '',
         customerEmail: jobOrder.customer_email || jobOrder.customerEmail || '',
         sku: jobOrder.sku || '',
         serialNumber: jobOrder.serial_number || jobOrder.serialNumber || '',
         coverage: jobOrder.coverage || [],
-        expiredWarranty: jobOrder.expired_warranty || jobOrder.expiredWarranty || false,
+        expiredWarranty: jobOrder.expired_warranty !== undefined ? jobOrder.expired_warranty : (jobOrder.expiredWarranty || false),
         complaintDetails: jobOrder.complaint_details || jobOrder.complaintDetails || '',
         timeIn: jobOrder.time_in || jobOrder.timeIn || '',
         timeOut: jobOrder.time_out || jobOrder.timeOut || '',
         technicianName1: jobOrder.technician_name_1 || jobOrder.technicianName1 || '',
         technicianName2: jobOrder.technician_name_2 || jobOrder.technicianName2 || '',
-        testedBefore: jobOrder.tested_before || jobOrder.testedBefore || false,
-        testedAfter: jobOrder.tested_after || jobOrder.testedAfter || false,
+        testedBefore: jobOrder.tested_before !== undefined ? jobOrder.tested_before : (jobOrder.testedBefore || false),
+        testedAfter: jobOrder.tested_after !== undefined ? jobOrder.tested_after : (jobOrder.testedAfter || false),
         findingsDiagnosis: jobOrder.findings_diagnosis || jobOrder.findingsDiagnosis || '',
         otherNotes: jobOrder.other_notes || jobOrder.otherNotes || '',
-        partsNeeded: jobOrder.parts_needed || jobOrder.partsNeeded || [{ partName: '', image: null }],
-        mediaFiles: jobOrder.media_urls ? jobOrder.media_urls.map(url => ({ data: url })) : jobOrder.mediaFiles || [],
+        partsNeeded: jobOrder.parts_needed && jobOrder.parts_needed.length > 0 ? 
+            (Array.isArray(jobOrder.parts_needed) ? jobOrder.parts_needed.map(part => 
+                typeof part === 'string' ? { partName: part, image: null } : 
+                part.partName ? part : { partName: part, image: null }
+            ) : [{ partName: '', image: null }]) : 
+            (jobOrder.partsNeeded && jobOrder.partsNeeded.length > 0 ? 
+                jobOrder.partsNeeded : [{ partName: '', image: null }]),
+        mediaFiles: jobOrder.media_urls ? 
+            (Array.isArray(jobOrder.media_urls) ? 
+                jobOrder.media_urls.map(url => typeof url === 'string' ? { data: url } : url) : 
+                [{ data: jobOrder.media_urls }]) : 
+            (jobOrder.mediaFiles || []),
         signatureData: jobOrder.signature_url || jobOrder.signatureData || null,
-        termsAccepted: jobOrder.terms_accepted || jobOrder.termsAccepted || false
+        termsAccepted: jobOrder.terms_accepted !== undefined ? jobOrder.terms_accepted : (jobOrder.termsAccepted || false)
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,12 +50,20 @@ const EditJobOrderModal = ({ jobOrder, onClose, onSave, isOnline }) => {
 
     const handlePartNameChange = (index, value) => {
         const newPartsNeeded = [...formData.partsNeeded];
+        // Ensure the part object has the correct structure
+        if (!newPartsNeeded[index]) {
+            newPartsNeeded[index] = { partName: '', image: null };
+        }
         newPartsNeeded[index].partName = value;
         setFormData(prev => ({ ...prev, partsNeeded: newPartsNeeded }));
     };
 
     const handlePartImageUpload = (index, imageFile) => {
         const newPartsNeeded = [...formData.partsNeeded];
+        // Ensure the part object has the correct structure
+        if (!newPartsNeeded[index]) {
+            newPartsNeeded[index] = { partName: '', image: null };
+        }
         newPartsNeeded[index].image = imageFile;
         setFormData(prev => ({ ...prev, partsNeeded: newPartsNeeded }));
     };
@@ -76,22 +94,27 @@ const EditJobOrderModal = ({ jobOrder, onClose, onSave, isOnline }) => {
                 customer_address: formData.customerAddress,
                 customer_email: formData.customerEmail,
                 sku: formData.sku,
-                serial_number: formData.serialNumber,
-                coverage: formData.coverage,
-                expired_warranty: formData.expiredWarranty,
-                complaint_details: formData.complaintDetails,
-                time_in: formData.timeIn,
-                time_out: formData.timeOut,
-                technician_name_1: formData.technicianName1,
-                technician_name_2: formData.technicianName2,
-                tested_before: formData.testedBefore,
-                tested_after: formData.testedAfter,
-                findings_diagnosis: formData.findingsDiagnosis,
-                other_notes: formData.otherNotes,
-                parts_needed: formData.partsNeeded,
-                media_urls: formData.mediaFiles.map(file => file.data),
-                signature_url: formData.signatureData,
-                terms_accepted: formData.termsAccepted,
+                serial_number: formData.serialNumber || '',
+                coverage: Array.isArray(formData.coverage) ? formData.coverage : [],
+                expired_warranty: Boolean(formData.expiredWarranty),
+                complaint_details: formData.complaintDetails || '',
+                time_in: formData.timeIn || null,
+                time_out: formData.timeOut || null,
+                technician_name_1: formData.technicianName1 || '',
+                technician_name_2: formData.technicianName2 || '',
+                tested_before: Boolean(formData.testedBefore),
+                tested_after: Boolean(formData.testedAfter),
+                findings_diagnosis: formData.findingsDiagnosis || '',
+                other_notes: formData.otherNotes || '',
+                parts_needed: Array.isArray(formData.partsNeeded) ? 
+                    formData.partsNeeded.map(part => ({
+                        partName: part.partName || '',
+                        image: part.image || null
+                    })) : [],
+                media_urls: Array.isArray(formData.mediaFiles) ? 
+                    formData.mediaFiles.map(file => file.data || file) : [],
+                signature_url: formData.signatureData || null,
+                terms_accepted: Boolean(formData.termsAccepted),
                 status: isOnline ? 'synced' : 'pending',
                 created_at: jobOrder.created_at || jobOrder.createdAt || new Date().toISOString()
             };
