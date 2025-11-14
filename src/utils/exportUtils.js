@@ -378,23 +378,44 @@ const generateHTMLReport = (data) => {
         
         ${data.map((item, index) => `
             <div class="job-order">
-                <h3>Job Order #${index + 1} - Case: ${item.caseNumber || 'N/A'}</h3>
+                <h3>Job Order #${index + 1} - Case: ${item.caseNumber || item.case_number || 'N/A'}</h3>
                 
-                <div class="field"><strong>Customer Name:</strong> ${item.customerName || 'N/A'}</div>
-                <div class="field"><strong>Customer Address:</strong> ${item.customerAddress || 'N/A'}</div>
-                <div class="field"><strong>Customer Email:</strong> ${item.customerEmail || 'N/A'}</div>
-                <div class="field"><strong>SKU:</strong> ${item.sku || 'N/A'}</div>
-                <div class="field"><strong>Coverage:</strong> ${Array.isArray(item.coverage) ? item.coverage.join(', ') : 'N/A'}</div>
-                <div class="field"><strong>Order Date:</strong> ${item.orderDate || 'N/A'}</div>
-                <div class="field"><strong>Dispatch Date:</strong> ${item.dispatchDate || 'N/A'}</div>
-                <div class="field"><strong>Dispatch Time:</strong> ${item.dispatchTime || 'N/A'}</div>
-                <div class="field"><strong>Complaint:</strong> ${item.complaintDetails || 'N/A'}</div>
-                <div class="field"><strong>Tested Before:</strong> ${item.testedBefore ? 'Yes' : 'No'}</div>
-                <div class="field"><strong>Tested After:</strong> ${item.testedAfter ? 'Yes' : 'No'}</div>
-                <div class="field"><strong>Troubles Found:</strong> ${item.troublesFound || 0}</div>
-                <div class="field"><strong>Other Notes:</strong> ${item.otherNotes || 'N/A'}</div>
-                <div class="field"><strong>Status:</strong> ${item.status || 'N/A'}</div>
-                <div class="field"><strong>Created:</strong> ${item.createdAt || 'N/A'}</div>
+                <div class="field"><strong>Customer Name:</strong> <span class="field-value">${item.customerName || item.customer_name || 'N/A'}</span></div>
+                <div class="field"><strong>Customer Address:</strong> <span class="field-value">${item.customerAddress || item.customer_address || 'N/A'}</span></div>
+                <div class="field"><strong>Customer Email:</strong> <span class="field-value">${item.customerEmail || item.customer_email || 'N/A'}</span></div>
+                <div class="field"><strong>SKU:</strong> <span class="field-value">${item.sku || 'N/A'}</span></div>
+                <div class="field"><strong>Serial Number:</strong> <span class="field-value">${item.serialNumber || item.serial_number || 'N/A'}</span></div>
+                <div class="field"><strong>Coverage:</strong> <span class="field-value">${Array.isArray(item.coverage) ? item.coverage.join(', ') : (Array.isArray(item.coverage_type) ? item.coverage_type.join(', ') : 'N/A')}</span></div>
+                <div class="field"><strong>Expired Warranty:</strong> <span class="field-value">${item.expiredWarranty !== undefined ? (item.expiredWarranty ? 'Yes' : 'No') : (item.expired_warranty !== undefined ? (item.expired_warranty ? 'Yes' : 'No') : 'N/A')}</span></div>
+                <div class="field"><strong>Order Date:</strong> <span class="field-value">${item.orderDate || item.order_date || 'N/A'}</span></div>
+                <div class="field"><strong>Complaint Details:</strong> <span class="field-value">${item.complaintDetails || item.complaint_details || 'N/A'}</span></div>
+                <div class="field"><strong>Time In:</strong> <span class="field-value">${item.timeIn || item.time_in || 'N/A'}</span></div>
+                <div class="field"><strong>Time Out:</strong> <span class="field-value">${item.timeOut || item.time_out || 'N/A'}</span></div>
+                <div class="field"><strong>Technician 1:</strong> <span class="field-value">${item.technicianName1 || item.technician_name_1 || 'N/A'}</span></div>
+                <div class="field"><strong>Technician 2:</strong> <span class="field-value">${item.technicianName2 || item.technician_name_2 || 'N/A'}</span></div>
+                <div class="field"><strong>Tested Before:</strong> <span class="field-value">${item.testedBefore !== undefined ? (item.testedBefore ? 'Yes' : 'No') : (item.tested_before !== undefined ? (item.tested_before ? 'Yes' : 'No') : 'N/A')}</span></div>
+                <div class="field"><strong>Tested After:</strong> <span class="field-value">${item.testedAfter !== undefined ? (item.testedAfter ? 'Yes' : 'No') : (item.tested_after !== undefined ? (item.tested_after ? 'Yes' : 'No') : 'N/A')}</span></div>
+                <div class="field"><strong>Findings/Diagnosis:</strong> <span class="field-value">${item.findingsDiagnosis || item.findings_diagnosis || 'N/A'}</span></div>
+                <div class="field"><strong>Other Notes:</strong> <span class="field-value">${item.otherNotes || item.other_notes || 'N/A'}</span></div>
+                <div class="field"><strong>Terms Accepted:</strong> <span class="field-value">${item.termsAccepted !== undefined ? (item.termsAccepted ? 'Yes' : 'No') : (item.terms_accepted !== undefined ? (item.terms_accepted ? 'Yes' : 'No') : 'N/A')}</span></div>
+                <div class="field"><strong>Status:</strong> <span class="field-value">${item.status || 'N/A'}</span></div>
+                <div class="field"><strong>Created:</strong> <span class="field-value">${item.createdAt || item.created_at || 'N/A'}</span></div>
+                
+                ${Array.isArray(item.partsNeeded) && item.partsNeeded.length > 0 ? `
+                    <div class="field full-width"><strong>Parts Needed:</strong></div>
+                    <div class="full-width">
+                        <ul style="margin: 0; padding-left: 20px;">
+                            ${item.partsNeeded.map((part, partIndex) => `<li>${part.partName || part || 'Unnamed Part'}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : Array.isArray(item.parts_needed) && item.parts_needed.length > 0 ? `
+                    <div class="field full-width"><strong>Parts Needed:</strong></div>
+                    <div class="full-width">
+                        <ul style="margin: 0; padding-left: 20px;">
+                            ${item.parts_needed.map((part, partIndex) => `<li>${(typeof part === 'object' ? (part.partName || part.name || 'Unnamed Part') : part) || 'Unnamed Part'}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
                 
                 ${((item.mediaFiles && item.mediaFiles.length > 0) || (item.media_urls && item.media_urls.length > 0)) ? `
                     <div class="section-divider">
@@ -406,7 +427,6 @@ const generateHTMLReport = (data) => {
                                     const isImage = (file.type && file.type.startsWith('image/')) || 
                                                    (file.name && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(file.name)) ||
                                                    (file.data && file.data.startsWith('data:image/'));
-                                    
 
                                     
                                     if (isImage && file.data) {
@@ -436,12 +456,12 @@ const generateHTMLReport = (data) => {
                 
                 ${(item.signatureData || item.signature_url) ? `
                     <div class="section-divider">
-                        <div class="signature">
-                            <strong>✍️ Customer Signature:</strong><br><br>
+                        <div class="signature-section">
+                            <h4>✍️ Customer Signature</h4>
                             <img src="${item.signatureData || item.signature_url}" alt="Customer Signature" />
                         </div>
                     </div>
-                ` : '<div class="section-divider"><div class="field"><strong>✍️ Signature:</strong> Not provided</div></div>'}
+                ` : '<div class="section-divider"><div class="field"><strong>✍️ Signature:</strong> <span class="field-value">Not provided</span></div></div>'}
             </div>
         `).join('')}
     </body>
